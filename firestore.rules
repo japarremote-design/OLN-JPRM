@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Daftar admin: dibuat manual lewat Firebase Console
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Pengaturan & status lomba: semua boleh baca, hanya admin yang ubah
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Bank soal + kunci jawaban: HANYA admin
+    match /admin/{doc} {
+      allow read, write: if isAdmin();
+    }
+
+    // Paket soal tanpa kunci. ID-nya acak & baru diumumkan saat lomba dimulai.
+    match /paket/{id} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if isAdmin();
+    }
+
+    // Kiriman jawaban peserta: hanya boleh DIBUAT sekali, tidak bisa diubah
+    match /jawaban/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['sesi', 'nama', 'asal', 'jaw', 'keluar', 'kirimAt'])
+        && request.resource.data.sesi is string && request.resource.data.sesi.size() <= 40
+        && request.resource.data.nama is string && request.resource.data.nama.size() > 0 && request.resource.data.nama.size() <= 60
+        && request.resource.data.asal is string && request.resource.data.asal.size() <= 80
+        && request.resource.data.jaw is map && request.resource.data.jaw.size() <= 100
+        && request.resource.data.keluar is int
+        && request.resource.data.kirimAt == request.time;
+      allow get: if true;                      // dipakai peserta untuk cek kiriman sudah masuk
+      allow list, update, delete: if isAdmin();
+    }
+
+    // Ringkasan papan skor (top 100), ditulis admin
+    match /publik/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#FE5000">
+<title>Admin · Olimpiade Literasi & Numerasi</title>
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top"><small>Panel Admin / Panitia</small><h1 id="judul">Olimpiade Literasi dan Numerasi Tingkat SD</h1></header>
+<main>
+  <!-- Login -->
+  <section id="vLogin" class="card hide">
+    <h2 style="margin-top:0">Masuk Admin</h2>
+    <form id="fLogin">
+      <label>Email</label><input name="email" type="email" required>
+      <label>Kata sandi</label><input name="pass" type="password" required>
+      <button class="btn block" style="margin-top:16px">Masuk</button>
+    </form>
+    <p id="loginMsg" class="mut"></p>
+  </section>
+
+  <section id="vAdmin" class="hide">
+    <div class="note" id="noteBuka">Biarkan halaman admin ini <b>tetap terbuka</b> selama lomba (cukup 1 perangkat admin) — skor dihitung di sini lalu dikirim ke papan skor. Hindari sering memuat ulang halaman ini dan mengubah pengaturan saat lomba, agar kuota gratis tidak cepat habis.</div>
+    <div class="tabs">
+      <button data-t="kontrol" class="on">Kontrol</button>
+      <button data-t="soal">Soal <span id="jmlSoal"></span></button>
+      <button data-t="hasil">Peserta & Hasil <span id="jmlPeserta"></span></button>
+    </div>
+
+    <!-- KONTROL -->
+    <div id="tKontrol">
+      <div class="card">
+        <div class="bar"><b>Status lomba</b><span id="stPill" class="pill">-</span></div>
+        <div class="center"><div class="big" id="stTimer">--:--</div><p class="mut" id="stInfo"></p></div>
+        <div class="row">
+          <button class="btn green" id="bMulai">▶ Mulai Lomba</button>
+          <button class="btn red" id="bAkhiri">■ Akhiri Lomba</button>
+        </div>
+        <button class="btn ghost block" id="bReset" style="margin-top:10px">↺ Reset (hapus peserta, jawaban & skor)</button>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Pengaturan</h3>
+        <form id="fCfg">
+          <label>Judul lomba</label><input name="judul">
+          <label>Jenis timer</label>
+          <select name="mode"><option value="lomba">Timer per lomba (total waktu, soal bebas dipilih)</option><option value="soal">Timer per soal (otomatis lanjut, tidak bisa kembali)</option></select>
+          <div class="row">
+            <div><label>Durasi lomba (menit)</label><input name="durasiMenit" type="number" min="1" max="300"></div>
+            <div><label>Detik per soal</label><input name="detikPerSoal" type="number" min="5" max="600"></div>
+          </div>
+          <div class="row">
+            <div><label>Poin jawaban benar</label><input name="poinBenar" type="number"></div>
+            <div><label>Poin jawaban salah</label><input name="poinSalah" type="number"></div>
+          </div>
+          <label class="chk"><input type="checkbox" name="acakSoal"> Acak urutan soal per peserta</label>
+          <label class="chk"><input type="checkbox" name="acakOpsi"> Acak urutan opsi jawaban</label>
+          <button class="btn block">Simpan pengaturan</button>
+        </form>
+      </div>
+      <div class="card">
+        <b>Tautan</b>
+        <p class="mut">Peserta: <a id="lPeserta" target="_blank"></a><br>Papan skor (proyektor): <a id="lPapan" target="_blank"></a></p>
+        <button class="btn ghost sm" id="bLogout">Keluar admin</button>
+      </div>
+    </div>
+
+    <!-- SOAL -->
+    <div id="tSoal" class="hide">
+      <div class="card">
+        <div class="row">
+          <button class="btn" id="bTambah">+ Tambah soal</button>
+          <button class="btn ghost" id="bContoh">Muat 30 soal contoh (literasi & numerasi)</button>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <label class="btn ghost" style="margin:0">Impor CSV/JSON<input type="file" id="fileImpor" accept=".csv,.json,text/csv,application/json" hidden></label>
+          <button class="btn ghost" id="bEksporSoal">Ekspor JSON</button>
+          <button class="btn ghost" id="bHapusSoal">Hapus semua</button>
+        </div>
+        <p class="mut" style="margin-bottom:0">Format CSV: <code>soal,a,b,c,d,kunci</code> (kunci = A/B/C/D), baris pertama judul kolom.</p>
+      </div>
+      <div class="card hide" id="formSoal">
+        <h3 style="margin-top:0" id="fsJudul">Tambah soal</h3>
+        <form id="fSoal">
+          <label>Pertanyaan</label><textarea name="t" required></textarea>
+          <div id="fsOpsi"></div>
+          <label>Kunci jawaban</label>
+          <select name="k"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select>
+          <div class="row" style="margin-top:14px"><button class="btn">Simpan</button><button type="button" class="btn ghost" id="bBatal">Batal</button></div>
+        </form>
+      </div>
+      <div id="daftarSoal"></div>
+    </div>
+
+    <!-- HASIL -->
+    <div id="tHasil" class="hide">
+      <div class="card">
+        <div class="row"><button class="btn" id="bEkspor">Unduh hasil (CSV)</button><a class="btn ghost" id="lPapan2" target="_blank">Buka papan skor</a></div>
+        <p class="mut" id="ringkas" style="margin-bottom:0"></p>
+        <label>Cari nama / sekolah</label><input id="cari" placeholder="ketik untuk mencari…">
+      </div>
+      <div class="card tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Peserta</th><th>Dijawab</th><th>B</th><th>S</th><th>K</th><th>Skor</th><th>Selesai</th><th title="Jumlah keluar aplikasi">Keluar</th><th></th></tr></thead>
+          <tbody id="tbHasil"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>window.LCC_PERSIST = true;</script>
+<script src="common.js"></script>
+<script src="soal-contoh.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

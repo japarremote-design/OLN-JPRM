@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0f172a">
+<title>Papan Skor · Olimpiade Literasi & Numerasi</title>
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="papan">
+<header class="top"><small>Jawa Pos Radar Madura · Papan Skor Langsung</small><h1 id="judul">Olimpiade Literasi dan Numerasi Tingkat SD</h1></header>
+<div class="lb">
+  <div class="lb-head">
+    <div><span id="st" class="pill">-</span> <span id="info" style="opacity:.75"></span></div>
+    <span class="timer" id="tmr">--:--</span>
+  </div>
+  <div class="lb-row hd"><span>#</span><span>Peserta</span><span style="text-align:right">Benar</span><span style="text-align:right">Skor</span></div>
+  <div id="list"></div>
+</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="common.js"></script>
+<script src="papan.js"></script>
+</body>
+</html>
