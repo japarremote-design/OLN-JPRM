@@ -1,9 +1,9 @@
 // ====== GANTI dengan konfigurasi Firebase Anda (Project settings > Your apps > Web) ======
 const firebaseConfig = {
-  apiKey: "ISI_API_KEY",
-  authDomain: "ISI_PROJECT.firebaseapp.com",
-  projectId: "ISI_PROJECT",
-  appId: "ISI_APP_ID"
+  apiKey: "AIzaSyAto5rTyJV9yit5L0VD8ghR1HxwGQI5LA8",
+  authDomain: "oln-jprm.firebaseapp.com",
+  projectId: "oln-jprm",
+  appId: "1:862417144601:web:dab7bf9c7154fcdf6f9388"
 };
 // =========================================================================================
 
