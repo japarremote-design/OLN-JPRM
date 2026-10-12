@@ -1,3 +1,4 @@
-   soal-siap-impor/
-   *.docx
-   *.xlsx
+soal-siap-impor/
+*.docx
+*.xlsx
+.DS_Store
