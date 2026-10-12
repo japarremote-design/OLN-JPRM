@@ -44,7 +44,7 @@ const MITRA = [['logo-495.png', 'Hari Jadi Kabupaten Bangkalan ke-495'], ['logo-
 function buatHeader(label) {
   const h = document.getElementById('hdr'); if (!h) return;
   h.className = 'top';
-  h.innerHTML = `<div class="in"><a class="logo" href="${LINK_RADAR}" target="_blank" rel="noopener" title="Buka RadarMadura.id"><img src="logo.png" alt="RadarMadura.id – Berita Madura Tepercaya"></a>
+  h.innerHTML = `<div class="in"><a class="logo" href="${LINK_RADAR}" target="_blank" rel="noopener" title="Buka Radar Madura"><img src="logo.png" alt="Jawa Pos Radar Madura"></a>
     <div class="tt"><small>${esc(label)}</small><h1 id="judul">${esc(DEFAULT_JUDUL)}</h1></div></div>
     <div class="mitra">${MITRA.map(([f, a]) => `<img src="${f}" alt="${esc(a)}" loading="lazy">`).join('')}</div>`;
 }
