@@ -1,9 +1,19 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function isAdmin() {
       return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
+    function cfg() { return get(/databases/$(database)/documents/config/lomba).data; }
+    function nowMs() { return request.time.toMillis(); }
+    // Sesi 'serentak' selalu terbuka saat status=mulai; 'jendela' hanya di antara bukaAt dan tutupAt
+    function dalamJendela() {
+      return cfg().get('jadwal', 'jendela') == 'serentak'
+        || ((cfg().get('bukaAt', null) == null || nowMs() >= cfg().bukaAt)
+            && (cfg().get('tutupAt', null) == null || nowMs() < cfg().tutupAt));
+    }
+    function dataPeserta(kode) { return get(/databases/$(database)/documents/peserta/$(kode)).data; }
 
     // Daftar admin: dibuat manual lewat Firebase Console
     match /admins/{uid} {
@@ -11,38 +21,77 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Pengaturan & status lomba: semua boleh baca, hanya admin yang ubah
+    // Pengaturan & status sesi: semua boleh baca, hanya admin yang ubah
     match /config/{doc} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Bank soal + kunci jawaban: HANYA admin
-    match /admin/{doc} {
-      allow read, write: if isAdmin();
+    // Bank soal (berisi kunci jawaban) & arsip sesi (berisi kunci): HANYA admin
+    match /admin/{doc} { allow read, write: if isAdmin(); }
+    match /sesi/{id}   { allow read, write: if isAdmin(); }
+
+    // Data peserta. ID dokumen = hash (nama+kelas+sekolah), jadi tidak bisa ditebak/di-list oleh peserta.
+    // Peserta boleh MEMBUAT dokumennya sendiri (pendaftaran mandiri) sekali saja, bila diizinkan panitia; tidak bisa mengubah/menghapus.
+    match /peserta/{kode} {
+      allow get: if true;
+      allow create: if kode.matches('^[a-f0-9]{24}$')
+        && request.resource.data.keys().hasOnly(['n', 'kc', 's', 'k', 'g'])
+        && request.resource.data.keys().hasAll(['n', 'kc', 's', 'k'])
+        && request.resource.data.n is string && request.resource.data.n.size() >= 3 && request.resource.data.n.size() <= 60
+        && request.resource.data.kc is string && request.resource.data.kc.size() <= 40
+        && request.resource.data.s is string && request.resource.data.s.size() <= 100
+        && request.resource.data.k in ['3', '4', '5']
+        && request.resource.data.get('g', true) == true;   // (tombol 'izinkan pendaftaran mandiri' dijaga di aplikasi; tanpa baca config agar hemat kuota)
+      allow list, update, delete: if isAdmin();
     }
 
-    // Paket soal tanpa kunci. ID-nya acak & baru diumumkan saat lomba dimulai.
+    // Paket soal TANPA kunci. ID acak; baru bisa dibaca saat sesi dibuka (dan di dalam jendela waktu)
     match /paket/{id} {
+      // ID paket acak 24 karakter & baru diumumkan di config saat sesi dibuka (klik "Buka Sesi" tepat saat jam mulai). Tanpa get() config → hemat kuota baca.
       allow get: if true;
       allow list: if false;
       allow write: if isAdmin();
     }
 
-    // Kiriman jawaban peserta: hanya boleh DIBUAT sekali, tidak bisa diubah
+    // Klaim perangkat: satu kode hanya bisa dipakai di satu HP per sesi (dibuat sekali, saat mulai mengerjakan).
+    // id = <sesi>_<kode>. Finalis-saja untuk babak final.
+    match /klaim/{id} {
+      allow get: if true;
+      allow create: if id.matches('^[A-Za-z0-9]{8}_[a-f0-9]{24}$')
+        && request.resource.data.keys().hasOnly(['dev', 'at'])
+        && request.resource.data.dev is string && request.resource.data.dev.size() <= 40
+        && request.resource.data.at == request.time
+        && id.split('_')[0] == cfg().sesi
+        && cfg().status == 'mulai' && dalamJendela()
+        && (cfg().get('babak', 'penyisihan') != 'final' || dataPeserta(id.split('_')[1]).get('finalis', false) == true);
+      allow update: if false;
+      allow list: if false;
+      allow delete: if isAdmin();
+    }
+
+    // Jawaban: dibuat SEKALI per peserta per sesi, hanya oleh pemilik klaim, dalam batas waktu pribadi
+    // (durasi total + 2 menit sejak klaim) dan selagi sesi masih dibuka (atau ≤15 menit setelah ditutup).
     match /jawaban/{id} {
-      allow create: if request.resource.data.keys().hasOnly(['sesi', 'nama', 'asal', 'jaw', 'keluar', 'kirimAt'])
-        && request.resource.data.sesi is string && request.resource.data.sesi.size() <= 40
-        && request.resource.data.nama is string && request.resource.data.nama.size() > 0 && request.resource.data.nama.size() <= 60
-        && request.resource.data.asal is string && request.resource.data.asal.size() <= 80
+      allow create: if request.resource.data.keys().hasOnly(['sesi', 'kode', 'n', 'kc', 's', 'k', 'jaw', 'keluar', 'mulai', 'kirimAt'])
+        && request.resource.data.keys().hasAll(['sesi', 'kode', 'n', 'kc', 's', 'k', 'jaw', 'kirimAt'])
+        && request.resource.data.n is string && request.resource.data.n.size() <= 60
+        && request.resource.data.kc is string && request.resource.data.kc.size() <= 40
+        && request.resource.data.s is string && request.resource.data.s.size() <= 100
+        && request.resource.data.k in ['3', '4', '5']
+        && id == request.resource.data.sesi + '_' + request.resource.data.kode
         && request.resource.data.jaw is map && request.resource.data.jaw.size() <= 100
-        && request.resource.data.keluar is int
-        && request.resource.data.kirimAt == request.time;
-      allow get: if true;                      // dipakai peserta untuk cek kiriman sudah masuk
+        && request.resource.data.get('keluar', 0) is int
+        && request.resource.data.get('mulai', 0) is number
+        && request.resource.data.kirimAt == request.time
+        && request.resource.data.sesi == cfg().sesi
+        && (cfg().status == 'mulai' || nowMs() <= cfg().get('selesaiAt', request.time).toMillis() + 900000)
+        && nowMs() <= get(/databases/$(database)/documents/klaim/$(id)).data.at.toMillis() + cfg().get('durasiTotalMs', 0) + 120000;
+      allow get: if true;               // peserta mengecek apakah kirimannya sudah masuk
       allow list, update, delete: if isAdmin();
     }
 
-    // Ringkasan papan skor (top 100), ditulis admin
+    // Ringkasan papan skor (Top 100 + juara per kecamatan), ditulis admin
     match /publik/{doc} {
       allow read: if true;
       allow write: if isAdmin();

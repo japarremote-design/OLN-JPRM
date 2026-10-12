@@ -3,18 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#0093DD">
 <title>Papan Skor · Olimpiade Literasi & Numerasi</title>
 <link rel="icon" href="icon-192.png">
 <link rel="stylesheet" href="style.css">
 </head>
 <body class="papan">
-<header class="top"><small>Jawa Pos Radar Madura · Papan Skor Langsung</small><h1 id="judul">Olimpiade Literasi dan Numerasi Tingkat SD</h1></header>
+<header id="hdr"></header>
 <div class="lb">
   <div class="lb-head">
-    <div><span id="st" class="pill">-</span> <span id="info" style="opacity:.75"></span></div>
+    <div><span id="st" class="pill">-</span> <span id="info" style="opacity:.85"></span></div>
     <span class="timer" id="tmr">--:--</span>
   </div>
+  <div id="kontrol" class="hide row" style="margin-bottom:12px"><select id="selKelas"><option value="3">Kelas 3</option><option value="4">Kelas 4</option><option value="5">Kelas 5</option></select><select id="selKec"></select></div>
+  <p class="mut" style="font-size:12px;margin:-4px 0 10px;opacity:.8">Pilih kecamatan untuk melihat Juara 1, 2, 3 dan Harapan 1 tiap kelas.</p>
   <div class="lb-row hd"><span>#</span><span>Peserta</span><span style="text-align:right">Benar</span><span style="text-align:right">Skor</span></div>
   <div id="list"></div>
 </div>

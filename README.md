@@ -1,68 +1,56 @@
-# Olimpiade Literasi dan Numerasi Tingkat SD
-Dalam rangka Hari Jadi Bangkalan ke-495 · Penyelenggara: Jawa Pos Radar Madura
+# Olimpiade Literasi & Numerasi SD — Hari Jadi Bangkalan ke-495
+Jawa Pos Radar Madura · dibuat oleh Qfaz Digital
 
-Aplikasi olimpiade online pilihan ganda (30 soal: 15 literasi + 15 numerasi) untuk ±5.000 peserta serentak dari HP Android.
-**Gratis:** hosting Vercel (Hobby) + Firebase Firestore (paket Spark).
+PWA (bisa dipasang di Android/iPhone, opsional dibungkus jadi APK) + Firebase Firestore + Vercel.
 
-| Halaman | Untuk | Alamat |
-|---|---|---|
-| `index.html` | Peserta (HP / APK) | `https://NAMA.vercel.app/` |
-| `admin.html` | Panitia: soal, mulai/akhiri, hasil | `https://NAMA.vercel.app/admin.html` |
-| `papan.html` | Papan skor live (proyektor) | `https://NAMA.vercel.app/papan.html` |
+## Alur lomba
+- **Login peserta tanpa kode**: nama lengkap, kelas (3/4/5), kecamatan, sekolah (dropdown dari 613 SD / 18 kecamatan). Peserta yang belum ada di daftar panitia otomatis terdaftar. Nama dicocokkan tanpa peduli huruf besar/kecil, titik, atau spasi ganda.
+- Soal tampil sesuai **kelas**; urutan soal **diacak per peserta**. Jawaban **boleh diganti** sampai menekan "Selesai & kumpulkan" (mode total waktu).
+- Satu nama = satu HP = satu kali mengerjakan. HP rusak / salah kirim: Admin → Peserta/Hasil → **Reset**.
+- Timer pribadi 60 menit (dijaga server). Hasil dihitung di perangkat admin (kunci jawaban tidak pernah dikirim ke HP peserta). Skor = benar × 2.
+- **Papan skor** (`papan.html`): pilih kelas + kecamatan → Juara 1, 2, 3 dan Harapan 1.
 
-## Fitur
-- 30 soal contoh tingkat SD (literasi & numerasi) siap pakai, tambah/edit/hapus, impor CSV/JSON, ekspor JSON
-- Timer **per lomba** (bebas pindah soal) atau **per soal** (otomatis lanjut)
-- Acak urutan soal & opsi per peserta, jawaban terkunci setelah dipilih
-- Papan skor real-time (Top 100), hasil lengkap + unduh CSV
-- Catatan berapa kali peserta keluar dari aplikasi
-- Tahan sinyal putus: jawaban tersimpan di HP, aplikasi ditutup/dibuka lagi tetap lanjut
-- Kunci jawaban tidak pernah dikirim ke HP peserta; soal tidak bisa diintip sebelum dimulai
+## Jadwal & babak (Admin → Kontrol)
+| Babak | Pengaturan |
+|---|---|
+| **Gladi** (H-2: 15 Okt & 24 Okt) | Babak = Gladi, centang "Tampilkan skor & waktu ke peserta". Soal: tab Soal → babak Gladi → "Muat 30 soal contoh". Selesai gladi: Peserta → **Bersihkan data gladi** |
+| **Penyisihan** 17 Okt | Babak = Penyisihan, Jadwal = Jendela waktu (isi buka/tutup, default 07.00–15.00), Timer total 60 menit |
+| **Final** 26 Okt | Tutup sesi penyisihan → Tab Finalis (kuota, "Tetapkan") → Sesi baru → Babak = Final, Jadwal = Serentak (atau jendela) → Buka |
 
-## Kenapa desainnya begini (5.000 peserta, gratis)
-- Realtime Database gratis hanya 100 koneksi → dipakai **Firestore** (tanpa batas koneksi).
-- Kuota gratis Firestore per hari: 50.000 baca, 20.000 tulis. Jawaban disimpan di HP dan **dikirim sekali** saat selesai.
-- Peserta tanpa login (login anonim Firebase dibatasi ±100 akun/jam per IP — satu sekolah bisa kena).
-- Perkiraan pemakaian 1 lomba 5.000 peserta: ±25.000–30.000 baca, ±5.500 tulis → masih di bawah kuota.
+Untuk tiap sesi: tab **Soal** (isi 6 set: penyisihan & final × kelas 3/4/5, plus gladi) → Kontrol → **Buka Sesi**. Sesi membuat 3 paket soal (satu per kelas).
 
-> ⚠️ Kuota harian Firestore reset tiap tengah malam waktu Pasifik = **pukul 14.00 WIB**. Jangan uji coba besar-besaran di hari yang sama sebelum lomba.
-> 💡 Untuk jaga-jaga, aktifkan paket **Blaze** (tetap dapat kuota gratis yang sama; kelebihan dibayar per pemakaian, untuk 5.000 peserta hanya hitungan sen dolar) dan pasang *budget alert*. Tanpa Blaze, bila kuota habis, kiriman jawaban akan ditolak.
+## Soal
+- `soal-siap-impor/penyisihan-kelas-3|4|5.xlsx` = 150 soal penyisihan dari file Word panitia (kunci sudah terisi; **jangan taruh folder ini di folder `public`**, berisi kunci).
+- Tab Soal → pilih **Babak** dan **Kelas** → Impor (xlsx/csv/json) → ulangi untuk tiap kelas. Soal final belum ada: siapkan dengan format yang sama lalu impor ke babak Final.
+- Format Excel: `Soal, Gambar Soal, A, Gambar A, … D, Gambar D, Kunci, Tabel` (Tabel: satu baris per baris tabel, sel dipisah `|`). Gambar: alamat https (Cloudinary).
+- `tools/parse_soal.py file.docx out.json` = pengurai soal Word → JSON (butuh pandoc & python-docx) bila ada file Word baru.
 
-## 1. Siapkan Firebase
-1. Buka https://console.firebase.google.com → **Add project**.
-2. **Build → Firestore Database → Create database** → mode *production*, lokasi `asia-southeast2 (Jakarta)`.
-3. Tab **Rules** → tempel isi `firestore.rules` → **Publish**.
-4. **Build → Authentication → Get started → Email/Password → Enable**. Tab **Users → Add user** (email & sandi admin). Salin **User UID**-nya.
-5. Firestore → **Start collection** `admins` → Document ID = UID tadi → isi field `aktif` (boolean) `true`.
-6. **Project settings → Your apps → Web (</>)** → daftarkan app → salin `firebaseConfig` ke `public/common.js` (baris paling atas).
+## Peserta
+- Tab Peserta → impor Excel `Nama Siswa, Kecamatan, Nama Sekolah, Kelas` (±2.000 terdaftar). Nama sekolah/kecamatan otomatis disamakan dengan daftar resmi. Boleh diimpor berkali-kali (tidak dobel).
+- Pendaftaran mandiri bisa dimatikan (Kontrol → centang "Izinkan pendaftaran mandiri").
+- Kelas di luar 3–5 ditolak.
 
-## 2. Deploy ke Vercel
-1. Upload folder ini ke GitHub (atau `vercel` CLI).
-2. Vercel → **Add New Project** → pilih repo → Framework: **Other** → Deploy (folder `public` sudah diatur di `vercel.json`).
+## Setup (sekali)
+1. **Firebase**: buat project → Firestore Database (production) → Authentication → Email/Password → buat 1 user admin.
+2. Project settings → Web app → salin config ke `public/common.js` (`firebaseConfig`).
+3. Firestore → **Rules** → tempel isi `firestore.rules` → Publish. Uji di *Rules Playground* (belum diuji di emulator resmi Firebase).
+4. Koleksi `admins`: dokumen dengan **ID = UID admin** (lihat Authentication), isi bebas (`aktif: true`).
+5. (Opsional gambar soal) Cloudinary → unsigned upload preset → isi `CLOUDINARY` di `common.js`.
+6. **Vercel**: deploy folder ini (`vercel.json` memakai folder `public`).
+7. `/admin.html` → login → impor soal → impor peserta.
 
-## 3. Jadikan APK Android (gratis)
-1. Buka https://www.pwabuilder.com → masukkan alamat Vercel → **Start**.
-2. **Package for stores → Android → Generate** → isi nama aplikasi & package (mis. `id.radarmadura.olimpiadesd`).
-3. Unduh zip → di dalamnya ada file **.apk** siap install (simpan juga file *signing key*-nya untuk update berikutnya).
-4. Bagikan APK ke sekolah. Peserta juga bisa langsung buka alamat web di Chrome tanpa install.
+## Kuota Firestore gratis (Spark: 50 ribu baca & 20 ribu tulis / hari, reset 14.00 WIB)
+Sudah dihemat: ±6 baca & ±3 tulis per peserta (login 1, config 1, kunci HP 1, paket soal 1, kirim jawaban 2). 5.500 peserta ≈ 33 ribu baca + panel admin ±8 ribu; tulis ≈ 15 ribu. Muat tapi mepet — **ukur saat gladi** (Firebase Console → Firestore → Usage).
+- Buka panel admin **sekali saja** dan jangan sering di-refresh (tiap buka membaca ulang semua jawaban).
+- Matikan "Tampilkan papan skor" selama lomba; nyalakan setelah pengumuman. Papan memuat ulang tiap 60 detik.
+- Klik **Buka Sesi** tepat saat jam mulai (ID paket soal baru diumumkan saat itu).
+- Reset kuota jam 14.00 WIB: jendela penyisihan yang melewati jam itu (mis. 08.00–17.00) otomatis mendapat jatah dua hari.
+- Cadangan: paket Blaze (butuh kartu) — jatah gratis tetap ada, kelebihan sangat murah.
 
-## 4. Hari-H
-1. Admin login di `admin.html` → tab **Soal** → muat/impor 30 soal → tab **Kontrol** → atur waktu & poin → Simpan.
-2. Peserta membuka aplikasi, isi nama & sekolah → layar *menunggu*.
-3. Buka `papan.html` di proyektor.
-4. Klik **Mulai Lomba** → soal muncul di semua HP. Waktu habis → jawaban terkirim otomatis.
-5. **Biarkan halaman admin terbuka** di 1 perangkat (skor dihitung di sana). Jangan sering memuat ulang.
-6. Setelah selesai: tab **Peserta & Hasil → Unduh hasil (CSV)**. Untuk lomba berikutnya: **Reset**.
+## PWA vs APK
+Utamakan **PWA** (buka link → "Tambahkan ke layar utama"). APK opsional: pwabuilder.com → URL Vercel → Package for Android.
 
-Peringkat: skor tertinggi → benar terbanyak → waktu pengerjaan tercepat. Kiriman yang masuk >5 menit setelah waktu habis ditandai *terlambat*.
-
-## Format impor CSV
-```
-soal,a,b,c,d,kunci
-"Hasil dari 24 x 15 adalah ...",340,350,370,360,D
-```
-Bisa disiapkan di Excel / Google Sheets lalu *Save as CSV*.
-
-## Saran sebelum lomba
-- Lakukan **gladi bersih** dengan beberapa sekolah (mis. 50–100 HP) minimal sehari sebelumnya.
-- Pastikan semua peserta sudah membuka aplikasi & mengisi data **sebelum** tombol Mulai ditekan.
+## Catatan
+- Warna mengikuti logo (biru `#0093DD`, oranye `#FFA60C`); logo RadarMadura.id di header menuju https://radarmadura.jawapos.com/ ; di bawahnya logo HUT Bangkalan 495, Pemkab Bangkalan, Dinas Pendidikan.
+- Keamanan: tanpa kode, siapa pun bisa mengetik nama orang lain. Pencegahan: pengawasan guru/panitia, nama yang sudah mengirim tidak bisa dipakai lagi, admin dapat reset. Untuk final bisa ditambah kode.
+- Uji otomatis (jsdom + simulasi Firestore & aturan): gladi, pendaftaran mandiri, impor 3 kelas × 50 soal, 600 peserta, penyisihan, papan juara, finalis, final — lulus semua.
