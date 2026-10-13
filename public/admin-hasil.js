@@ -70,7 +70,8 @@ const terdaftarSesi = () => { const S = sesiMeta(); return rosterMuat ? [...rost
 // ---------- tampilan hasil ----------
 function saringHasil() {
   const kc = $('#hKec').value, kl = $('#hKelas').value, q = ($('#hCari').value || '').toLowerCase().trim();
-  return skor.filter(s => (!kc || s.kec === kc) && (!kl || s.kelas === kl) && (!q || (s.nama + ' ' + s.asal).toLowerCase().includes(q)));
+  return skor.filter(s => (!kc || s.kec === kc) && (!kl || s.kelas === kl) && (!q || (s.nama + ' ' + s.asal).toLowerCase().includes(q)))
+    .sort((a, b) => String(a.kelas).localeCompare(String(b.kelas)) || (a.telat - b.telat) || ((a.rk || 9e9) - (b.rk || 9e9))); // dikelompokkan per kelas, lalu peringkat
 }
 function renderHasil() {
   const daftar = terdaftarSesi(), n = skor.length, ok = skor.filter(s => !s.telat);
@@ -78,8 +79,8 @@ function renderHasil() {
   $('#statHasil').innerHTML = [['Terdaftar', rosterMuat ? daftar.length : '–'], ['Sudah mengerjakan', n], ['Belum', rosterMuat ? Math.max(0, daftar.length - n) : '–'], ['Skor tertinggi', ok.length ? ok[0].skor : '-'], ['Rata-rata', rata], ['Terlambat', n - ok.length]]
     .map(([l, v]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
   const arr = saringHasil();
-  $('#tbHasil').innerHTML = !arr.length ? '<tr><td colspan="10" class="mut center">Belum ada kiriman.</td></tr>' : arr.slice(0, batasH).map(s => `
-    <tr><td>${s.rk || '–'}</td><td>${s.rkKec || '–'}${s.predikat ? `<br><span class="pill mulai">${s.predikat}</span>` : ''}</td><td><b>${esc(s.nama)}</b><br><span class="mut">Kls ${esc(s.kelas)} · ${esc(s.asal)} · Kec. ${esc(s.kec)}</span></td>
+  $('#tbHasil').innerHTML = !arr.length ? '<tr><td colspan="11" class="mut center">Belum ada kiriman.</td></tr>' : arr.slice(0, batasH).map(s => `
+    <tr><td><span class="kls k${esc(s.kelas)}">Kelas ${esc(s.kelas)}</span></td><td><b>${s.rk || '–'}</b></td><td>${s.rkKec || '–'}${s.predikat ? `<br><span class="pill mulai">${s.predikat}</span>` : ''}</td><td><b>${esc(s.nama)}</b><br><span class="mut">${esc(s.asal)} · Kec. ${esc(s.kec)}</span></td>
     <td>${s.benar}</td><td>${s.salah}</td><td>${s.kosong}</td><td><b>${s.skor}</b></td>
     <td>${s.telat ? '<span class="pill selesai">terlambat</span>' : fmtTime(s.durasiMs || 0)}</td><td>${s.keluar ? `<span class="pill selesai">${s.keluar}×</span>` : '0'}</td>
     <td><button class="btn ghost sm" data-reset="${s.kode}">Reset</button></td></tr>`).join('');
