@@ -1,3 +1,6 @@
+// Ikon SVG (emoji tidak tampil di PC/Windows lama)
+const IKON = { ok: ['#16a34a', '<circle cx="12" cy="12" r="10"/><path d="M7 12.5l3.2 3.2L17 9"/>'], kunci: ['#0077B5', '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>'], stop: ['#dc2626', '<circle cx="12" cy="12" r="10"/><path d="M5 5l14 14"/>'], jam: ['#0093DD', '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>'], mulai: ['#16a34a', '<circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4z"/>'], alat: ['#FFA60C', '<circle cx="12" cy="12" r="10"/><path d="M12 7v6M12 16.5v.5"/>'], info: ['#0093DD', '<circle cx="12" cy="12" r="10"/><path d="M12 11v6M12 7.5v.5"/>'], kirim: ['#0093DD', '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/>'] };
+const ikon = k => { const [w, p] = IKON[k] || IKON.info; return `<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="${w}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`; };
 // Aplikasi peserta. Login: nama lengkap + kelas + kecamatan + sekolah (pilih dari daftar). Soal sesuai kelas.
 // Jawaban disimpan di HP (localStorage) dan dikirim SEKALI saat selesai → hemat kuota & tahan sinyal putus.
 buatHeader('Jawa Pos Radar Madura · Peserta');
@@ -62,7 +65,7 @@ async function ambilPeserta(kode) {
 
 function tampil(nama) {
   layar = nama;
-  if (nama === 'belum') app.innerHTML = '<div class="card center"><div class="big">🛠️</div><h3>Lomba belum disiapkan panitia.</h3></div>';
+  if (nama === 'belum') app.innerHTML = `<div class="card center"><div class="big">${ikon('alat')}</div><h3>Lomba belum disiapkan panitia.</h3></div>`;
   else if (nama === 'masuk') {
     const kecs = DATA_SEKOLAH.map(x => x[0]);
     app.innerHTML = `<div class="card">
@@ -115,35 +118,35 @@ function tampil(nama) {
     if (cfg.status !== 'mulai') info = 'Lomba belum dibuka panitia.';
     else if (cfg.bukaAt && nowServer() < cfg.bukaAt) info = `Dibuka ${fmtTgl(cfg.bukaAt)}.`;
     app.innerHTML = `<div class="card center">${identitasHtml()}
-      <div class="big">⏳</div><h3>${info || 'Menunggu lomba dimulai panitia…'}</h3>
+      <div class="big">${ikon('jam')}</div><h3>${info || 'Menunggu lomba dimulai panitia…'}</h3>
       <p class="mut">${esc(babakNama())} · ${cfg.jumlahSoal || 50} soal pilihan ganda · ${durasiTeks()}${cfg.tutupAt ? `<br>Ditutup ${fmtTgl(cfg.tutupAt)}` : ''}<br>Halaman ini otomatis berubah saat lomba dibuka.</p></div>${aturanHtml()}${tombolKeluar()}`;
     pasangKeluar();
   } else if (nama === 'siap') {
     app.innerHTML = `<div class="card center">${identitasHtml()}
-      <div class="big">🚀</div><h3>Lomba sudah dibuka</h3>
+      <div class="big">${ikon('mulai')}</div><h3>Lomba sudah dibuka</h3>
       <p class="mut">${esc(babakNama())} · ${cfg.jumlahSoal || 50} soal · ${durasiTeks()}${cfg.tutupAt ? `<br>Terakhir mulai sebelum ${fmtTgl(cfg.tutupAt)}` : ''}</p>
       <p><b>Waktu mulai berjalan saat kamu menekan tombol di bawah.</b></p>
       <button class="btn or block" id="bMulai" style="font-size:18px;padding:16px">Mulai Mengerjakan</button></div>${aturanHtml()}${tombolKeluar()}`;
     $('#bMulai').onclick = () => { $('#bMulai').disabled = true; mulaiKerja(); };
     pasangKeluar();
   } else if (nama === 'selesai') {
-    app.innerHTML = `<div class="card center"><div class="big">✅</div><h2>Terima kasih, ${esc(st.nama)}!</h2>
+    app.innerHTML = `<div class="card center"><div class="big">${ikon('ok')}</div><h2>Terima kasih, ${esc(st.nama)}!</h2>
       <p class="mut">Jawabanmu sudah diterima server.</p>
       ${hasilHtml()}<p class="mut">Hasil diumumkan panitia dan Jawa Pos Radar Madura.</p>
       <a class="btn ghost" href="${LINK_RADAR}" target="_blank" rel="noopener">Buka RadarMadura.id</a> <a class="btn ghost" href="papan.html">Papan skor</a></div>
       <p class="center mut">HP dipakai bergantian? Peserta berikutnya bisa masuk dengan datanya sendiri.</p>${tombolKeluar('Peserta berikutnya')}`;
     pasangKeluar();
   } else if (nama === 'ditutup') {
-    app.innerHTML = `<div class="card center"><div class="big">🔒</div><h2>Lomba sudah ditutup</h2><p class="mut">${esc(st.nama)}, silakan hubungi panitia/guru pendamping.</p><a class="btn ghost" href="papan.html">Papan skor</a></div>${tombolKeluar()}`;
+    app.innerHTML = `<div class="card center"><div class="big">${ikon('kunci')}</div><h2>Lomba sudah ditutup</h2><p class="mut">${esc(st.nama)}, silakan hubungi panitia/guru pendamping.</p><a class="btn ghost" href="papan.html">Papan skor</a></div>${tombolKeluar()}`;
     pasangKeluar();
   } else if (nama === 'terkunci') {
-    app.innerHTML = `<div class="card center"><div class="big">⛔</div><h2>Nama ini sudah dipakai</h2><p class="mut">Data ini sudah digunakan mengerjakan di perangkat lain. Jika kamu berbeda dengan teman yang bernama sama, tambahkan nama belakang/inisial. Selain itu hubungi pengawas/panitia.</p><button class="btn" id="bUlang">Coba lagi</button></div>${tombolKeluar('Ganti data')}`;
+    app.innerHTML = `<div class="card center"><div class="big">${ikon('stop')}</div><h2>Nama ini sudah dipakai</h2><p class="mut">Data ini sudah digunakan mengerjakan di perangkat lain. Jika kamu berbeda dengan teman yang bernama sama, tambahkan nama belakang/inisial. Selain itu hubungi pengawas/panitia.</p><button class="btn" id="bUlang">Coba lagi</button></div>${tombolKeluar('Ganti data')}`;
     pasangKeluar();
     $('#bUlang').onclick = () => { dimuat = false; route(); };
   } else if (nama === 'tanpasoal') {
-    app.innerHTML = `<div class="card center"><div class="big">🛠️</div><h3>Soal untuk kelas ${esc(st.kelas)} belum disiapkan panitia.</h3></div>${tombolKeluar()}`; pasangKeluar();
+    app.innerHTML = `<div class="card center"><div class="big">${ikon('alat')}</div><h3>Soal untuk kelas ${esc(st.kelas)} belum disiapkan panitia.</h3></div>${tombolKeluar()}`; pasangKeluar();
   } else if (nama === 'tidaklolos') {
-    app.innerHTML = `<div class="card center"><div class="big">🙏</div><h2>Babak final khusus finalis</h2><p class="mut">${esc(st.nama)} belum terdaftar sebagai finalis. Terima kasih sudah berpartisipasi!</p>
+    app.innerHTML = `<div class="card center"><div class="big">${ikon('info')}</div><h2>Babak final khusus finalis</h2><p class="mut">${esc(st.nama)} belum terdaftar sebagai finalis. Terima kasih sudah berpartisipasi!</p>
       <button class="btn ghost" id="bCek">Cek lagi</button></div>${tombolKeluar()}`;
     $('#bCek').onclick = async () => { try { const d = await ambilPeserta(st.kode); if (d) { st.finalis = !!d.finalis; simpan(); } } catch (e) { toast('Gagal terhubung'); } route(); };
     pasangKeluar();
@@ -173,7 +176,7 @@ async function klaim() {
 }
 async function mulaiKerja() {
   if (dimuat) return; dimuat = true; layar = 'memuat';
-  const pesan = t => { app.innerHTML = `<div class="card center mut"><div class="big">⏳</div>${t}</div>`; };
+  const pesan = t => { app.innerHTML = `<div class="card center mut"><div class="big">${ikon('jam')}</div>${t}</div>`; };
   pesan('Menyiapkan soal…');
   try {
     if (!st.mulai) {
@@ -257,7 +260,7 @@ function renderSoal() {
     $('#next').onclick = () => ke((st.idx + 1) % n);
     $$('.grid button', app).forEach(b => b.onclick = () => ke(+b.dataset.i));
     $('#kumpul').onclick = () => {
-      const kosong = n - dijawab;
+      const kosong = n - urutan.filter(x => st.jaw[x] !== undefined).length; // hitung ulang saat diklik (bukan nilai lama saat render)
       if (confirm(kosong ? `Masih ada ${kosong} soal belum dijawab. Tetap kumpulkan?` : 'Kumpulkan jawaban sekarang?')) selesaikan(false);
     };
   }
@@ -313,7 +316,7 @@ function selesaikan(otomatis) {
 async function kirim(denganJeda) {
   if (mengirim || st.terkirim) return; mengirim = true; layar = 'kirim'; clearInterval(timerInt);
   const n = Object.values(st.jaw).filter(v => v !== -1).length;
-  app.innerHTML = `<div class="card center"><div class="big">📤</div><h3>Mengirim jawaban…</h3><p class="mut">${n} jawaban. Jangan tutup aplikasi.</p><p class="mut" id="kirimInfo"></p></div>`;
+  app.innerHTML = `<div class="card center"><div class="big">${ikon('kirim')}</div><h3>Mengirim jawaban…</h3><p class="mut">${n} jawaban. Jangan tutup aplikasi.</p><p class="mut" id="kirimInfo"></p></div>`;
   if (denganJeda) await new Promise(r => setTimeout(r, Math.random() * 15000)); // sebar kiriman serentak
   const ref = fs.collection('jawaban').doc(st.sesi + '_' + st.kode);
   const data = { sesi: st.sesi, kode: st.kode, n: st.nama, kc: st.kec, s: st.sekolah, k: st.kelas, jaw: st.jaw, keluar: st.keluar || 0, mulai: Math.round(st.mulai || 0), kirimAt: SERVER_TS };

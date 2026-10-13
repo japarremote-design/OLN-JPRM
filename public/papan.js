@@ -1,3 +1,6 @@
+// Medali (SVG, tampil di semua perangkat): 1 emas, 2 perak, 3 perunggu, Harapan 1 hijau-tosca bintang
+const MEDALI = [['#f5b301', '#b88700', '1'], ['#cfd8e3', '#8693a6', '2'], ['#d9843b', '#8f4f17', '3'], ['#2dd4bf', '#0f8f80', '★']];
+const medali = i => { const [a, b, t] = MEDALI[i]; return `<svg width="34" height="40" viewBox="0 0 34 40" aria-label="${['Juara 1', 'Juara 2', 'Juara 3', 'Harapan 1'][i]}"><path d="M9 0h6l3 14h-7zM25 0h-6l-3 14h7z" fill="${i === 3 ? '#0f8f80' : '#c0392b'}"/><circle cx="17" cy="25" r="13" fill="${a}" stroke="${b}" stroke-width="2.5"/><circle cx="17" cy="25" r="9" fill="none" stroke="${b}" stroke-width="1" opacity=".5"/><text x="17" y="30" text-anchor="middle" font-size="${t === '★' ? 15 : 14}" font-weight="900" font-family="system-ui,sans-serif" fill="${i === 1 ? '#475569' : '#fff'}">${t}</text></svg>`; };
 // Papan skor publik. Hanya membaca 2 dokumen kecil (config/lomba & publik/papan) yang diperbarui admin.
 buatHeader('Jawa Pos Radar Madura · Papan Skor Langsung');
 let cfg = {}, papan = {}, pilih = '', pilihKelas = '3';
@@ -43,8 +46,8 @@ function render() {
   const list = pilih ? ((papan.kec[pilih] || {})[pilihKelas] || []) : ((papan.kls || {})[pilihKelas] || []);
   const label = ['Juara 1', 'Juara 2', 'Juara 3', 'Harapan 1'];
   $('#list').innerHTML = !list.length ? '<p class="center" style="opacity:.75;padding:40px 0">Belum ada peserta kelas ini yang mengumpulkan.</p>' :
-    list.map((s, i) => `<div class="lb-row ${pilih && i < 3 && s.sk > 0 ? 'r' + (i + 1) : ''}">
-      <span class="rk">${pilih && i < 3 && s.sk > 0 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span>
+    list.map((s, i) => `<div class="lb-row ${pilih && i < 4 && s.sk > 0 ? 'r' + (i + 1) : ''}">
+      <span class="rk">${pilih && i < 4 && s.sk > 0 ? medali(i) : i + 1}</span>
       <span class="nm"><b>${esc(s.n)}</b><small>${pilih && i < 4 ? `<em class="pred">${label[i]}</em> · ` : ''}Kelas ${esc(s.k)} · ${esc(s.s)}${pilih ? '' : ' · Kec. ' + esc(s.kc)}${s.d != null ? ' · ' + fmtTime(s.d) : ''}</small></span>
       <span class="pr">${s.b} benar</span>
       <span class="sk">${s.sk}</span></div>`).join('');

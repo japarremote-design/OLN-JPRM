@@ -1,5 +1,5 @@
 // Service worker sederhana: simpan tampilan aplikasi, data tetap online (Firebase)
-const CACHE = 'lcc-v6';
+const CACHE = 'lcc-v7';
 const ASET = ['index.html', 'style.css', 'common.js', 'peserta.js', 'manifest.json', 'logo.png', 'logo-495.png', 'logo-bangkalan.png', 'logo-dinas.png', 'data-sekolah.js', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASET))); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });
