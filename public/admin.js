@@ -9,7 +9,7 @@ const WIB_MS = s => new Date(s).getTime();
 const DEFAULT_CFG = {
   judul: DEFAULT_JUDUL, babak: 'penyisihan', jadwal: 'jendela', timer: 'total', durasiMenit: 60, detikPerSoal: 30,
   poinBenar: 2, poinSalah: 0, acakSoal: true, acakOpsi: false, tampilSkor: false, daftarMandiri: true, status: 'menunggu', jumlahSoal: 50,
-  bukaAt: WIB_MS('2026-10-17T07:00:00+07:00'), tutupAt: WIB_MS('2026-10-17T15:00:00+07:00')
+  bukaAt: WIB_MS('2026-10-17T08:00:00+07:00'), tutupAt: WIB_MS('2026-10-17T11:00:00+07:00')
 };
 const NAMA_BABAK = { gladi: 'Gladi', penyisihan: 'Penyisihan', final: 'Final' };
 
