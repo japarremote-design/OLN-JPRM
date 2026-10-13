@@ -14,7 +14,7 @@ PWA (bisa dipasang di Android/iPhone, opsional dibungkus jadi APK) + Firebase Fi
 | Babak | Pengaturan |
 |---|---|
 | **Gladi** (H-2: 15 Okt & 24 Okt) | Babak = Gladi, centang "Tampilkan skor & waktu ke peserta". Soal: tab Soal → babak Gladi → "Muat 30 soal contoh". Selesai gladi: Peserta → **Bersihkan data gladi** |
-| **Penyisihan** 17 Okt | Babak = Penyisihan, Jadwal = Jendela waktu (isi buka/tutup, default 07.00–15.00), Timer total 60 menit |
+| **Penyisihan** 17 Okt | Babak = Penyisihan, Jadwal = Jendela waktu (isi buka/tutup, default 08.00–11.00; gladi juga 08.00–11.00), Timer total 60 menit |
 | **Final** 26 Okt | Tutup sesi penyisihan → Tab Finalis (kuota, "Tetapkan") → Sesi baru → Babak = Final, Jadwal = Serentak (atau jendela) → Buka |
 
 Untuk tiap sesi: tab **Soal** (isi 6 set: penyisihan & final × kelas 3/4/5, plus gladi) → Kontrol → **Buka Sesi**. Sesi membuat 3 paket soal (satu per kelas).

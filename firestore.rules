@@ -66,7 +66,7 @@ service cloud.firestore {
         && cfg().status == 'mulai' && dalamJendela()
         && (cfg().get('babak', 'penyisihan') != 'final' || dataPeserta(id.split('_')[1]).get('finalis', false) == true);
       allow update: if false;
-      allow list: if false;
+      allow list: if isAdmin();      // admin perlu daftar klaim untuk "Bersihkan data gladi"
       allow delete: if isAdmin();
     }
 
