@@ -1,16 +1,27 @@
 // Tombol kedip "Pasang" (PWA) di pojok kanan atas header. Dipisah agar common.js (berisi config Firebase) tidak perlu diubah.
 const IKON_PASANG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M6 11l6 6 6-6M5 21h14"/></svg>';
 let promptPasang = null;
+const KUNCI = 'oln_terpasang';
+const tandai = () => { try { localStorage.setItem(KUNCI, '1'); } catch (e) {} };
+const sudahTandai = () => { try { return localStorage.getItem(KUNCI) === '1'; } catch (e) { return false; } };
 const sudahTerpasang = () => (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); promptPasang = e; });
-window.addEventListener('appinstalled', () => { const b = document.getElementById('btnPasang'); if (b) b.hidden = true; });
+const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+if (sudahTerpasang()) tandai(); // dibuka dari ikon layar utama = sudah terpasang
+function tampilTombol(ya) { const b = document.getElementById('btnPasang'); if (b) b.hidden = !ya; }
+// Android/Chrome: tombol hanya muncul bila browser benar-benar menawarkan pasang (jadi hilang bila sudah terpasang)
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); promptPasang = e; if (!sudahTandai()) tampilTombol(true); });
+window.addEventListener('appinstalled', () => { tandai(); promptPasang = null; tampilTombol(false); });
 function pasangUI() {
-  const b = document.getElementById('btnPasang'); if (!b || sudahTerpasang()) return;
-  b.hidden = false;
+  const b = document.getElementById('btnPasang'); if (!b) return;
+  if (sudahTerpasang() || sudahTandai()) return;
+  if (promptPasang || (ios && !sudahTerpasang())) b.hidden = false; // iPhone tidak punya event, tampil sekali sampai diketuk
   b.onclick = async () => {
-    if (promptPasang) { promptPasang.prompt(); try { await promptPasang.userChoice; } catch (e) {} promptPasang = null; return; }
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    toast(ios ? 'Ketuk tombol Bagikan lalu pilih "Tambah ke Layar Utama"' : 'Ketuk menu ⋮ di pojok kanan atas, lalu pilih "Instal aplikasi" / "Tambahkan ke layar utama"');
+    if (promptPasang) {
+      promptPasang.prompt();
+      try { const r = await promptPasang.userChoice; if (r && r.outcome === 'accepted') { tandai(); tampilTombol(false); } } catch (e) {}
+      promptPasang = null; return;
+    }
+    toast('Ketuk tombol Bagikan lalu pilih "Tambah ke Layar Utama"'); tandai(); tampilTombol(false);
   };
 }
 const _buatHeader = buatHeader;
