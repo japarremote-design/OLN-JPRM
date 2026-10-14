@@ -64,7 +64,7 @@ async function ambilPeserta(kode) {
 }
 
 function tampil(nama) {
-  layar = nama;
+  layar = nama; document.body.classList.remove('ujian');
   if (nama === 'belum') app.innerHTML = `<div class="card center"><div class="big">${ikon('alat')}</div><h3>Lomba belum disiapkan panitia.</h3></div>`;
   else if (nama === 'masuk') {
     const kecs = DATA_SEKOLAH.map(x => x[0]);
@@ -207,10 +207,10 @@ async function mulaiKerja() {
     if (!st.mulai) { st.mulai = Math.round(nowServer()); st.idx = Math.max(0, urutan.findIndex(id => st.jaw[id] === undefined)); st.soalMulai = nowServer(); }
     else if (!(st.idx >= 0 && st.idx < urutan.length) || (cfg.timer === 'soal' && st.jaw[urutan[st.idx]] !== undefined)) { st.idx = Math.max(0, urutan.findIndex(id => st.jaw[id] === undefined)); st.soalMulai = nowServer(); }
     simpan();
-    layar = 'kerja'; renderSoal();
+    layar = 'kerja'; document.body.classList.add('ujian'); renderSoal();
     clearInterval(timerInt); timerInt = setInterval(tick, 250);
   } catch (e) {
-    dimuat = false; layar = 'galat';
+    dimuat = false; layar = 'galat'; document.body.classList.remove('ujian');
     app.innerHTML = `<div class="card center">Gagal memuat soal (${esc(e.message)}).<br><br><button class="btn" id="ulang">Coba lagi</button></div>`;
     $('#ulang').onclick = () => route();
   }
@@ -314,7 +314,7 @@ function selesaikan(otomatis) {
   kirim(otomatis && cfg.jadwal === 'serentak');
 }
 async function kirim(denganJeda) {
-  if (mengirim || st.terkirim) return; mengirim = true; layar = 'kirim'; clearInterval(timerInt);
+  if (mengirim || st.terkirim) return; mengirim = true; layar = 'kirim'; document.body.classList.remove('ujian'); clearInterval(timerInt);
   const n = Object.values(st.jaw).filter(v => v !== -1).length;
   app.innerHTML = `<div class="card center"><div class="big">${ikon('kirim')}</div><h3>Mengirim jawaban…</h3><p class="mut">${n} jawaban. Jangan tutup aplikasi.</p><p class="mut" id="kirimInfo"></p></div>`;
   if (denganJeda) await new Promise(r => setTimeout(r, Math.random() * 15000)); // sebar kiriman serentak

@@ -125,3 +125,6 @@ header.top{position:static}
 .kls.k3{background:#0093DD}.kls.k4{background:#FFA60C;color:#1F1A17}.kls.k5{background:#16a34a}
 
 @media(max-width:600px){.lb-row{grid-template-columns:44px 1fr 60px 58px;gap:8px;padding:10px}.lb-row .pr{font-size:.7em}}
+
+/* Saat ujian berlangsung, logo tidak bisa diketuk (mencegah keluar tak sengaja ke RadarMadura.id) */
+body.ujian header.top a.logo{pointer-events:none}
