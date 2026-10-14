@@ -31,3 +31,14 @@ buatHeader = function (label) {
   const b = document.createElement('button'); b.type = 'button'; b.id = 'btnPasang'; b.className = 'pasang'; b.hidden = true; b.innerHTML = IKON_PASANG + ' Pasang';
   inn.appendChild(b); pasangUI();
 };
+
+// Kredit pembuat di footer (kecil). Disembunyikan saat ujian berlangsung (lihat style.css: body.ujian .kredit).
+(function () {
+  const pasangKredit = () => {
+    if (document.querySelector('.kredit')) return;
+    const f = document.createElement('footer'); f.className = 'kredit';
+    f.innerHTML = 'Powered by <a href="https://www.qfazdigital.my.id" target="_blank" rel="noopener"><img src="qfaz-logo.png" alt="" width="22" height="22" onerror="this.remove()"> <b>Qfaz Digital</b></a>';
+    document.body.appendChild(f);
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', pasangKredit); else pasangKredit();
+})();

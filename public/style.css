@@ -128,3 +128,10 @@ header.top{position:static}
 
 /* Saat ujian berlangsung, logo tidak bisa diketuk (mencegah keluar tak sengaja ke RadarMadura.id) */
 body.ujian header.top a.logo{pointer-events:none}
+/* Kredit pembuat (footer) */
+.kredit{text-align:center;font-size:12px;color:#8a94a0;padding:22px 16px 30px}
+.kredit a{display:inline-flex;align-items:center;gap:5px;color:#6b7280;text-decoration:none;vertical-align:middle}
+.kredit img{width:22px;height:22px;object-fit:contain}
+.kredit b{font-weight:700}
+body.ujian .kredit{display:none}
+@media print{.kredit{display:none}}
