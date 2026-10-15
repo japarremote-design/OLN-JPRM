@@ -16,6 +16,18 @@ function idPerangkat() {
   try { let d = localStorage.getItem(KEY_DEV); if (!d) { d = acakId(16); localStorage.setItem(KEY_DEV, d); } return d; } catch (e) { return acakId(16); }
 }
 const DEV = idPerangkat();
+// Kontak panitia: dinonaktifkan (null). Untuk mengaktifkan lagi, isi { nama, wa: '62...', tampil: '+62 ...' }
+const KONTAK = null;
+const batasKeluar = () => cfg && cfg.batasKeluar != null ? Math.max(0, +cfg.batasKeluar || 0) : 3; // 0 = tidak dibatasi
+const JEDA_KELUAR = 2000; // keluar < 2 detik (mis. sentuhan tak sengaja) tidak dihitung
+const kontakHtml = () => {
+  if (!KONTAK) return '';
+  const teks = `Halo panitia OLN, saya mau melapor.\nNama: ${st.nama || ''}\nKelas: ${st.kelas || ''}\nSekolah: ${st.sekolah || ''}\nKecamatan: ${st.kec || ''}\nKendala: `;
+  return `<div class="card"><b>Ada kendala? Hubungi panitia</b>
+    <p class="mut" style="margin:6px 0 4px">${esc(KONTAK.nama)} · <b>${esc(KONTAK.tampil)}</b></p>
+    <ul class="mut" style="padding-left:18px;margin:4px 0 12px"><li>Hanya melayani lewat chat WhatsApp.</li><li>Pengaduan wajib mencantumkan nama sekolah dan kecamatan.</li><li>Boleh dikirim lewat voice note.</li></ul>
+    <a class="btn wa block" href="https://wa.me/${KONTAK.wa}?text=${encodeURIComponent(teks)}" target="_blank" rel="noopener">Chat WhatsApp Panitia</a></div>`;
+};
 const denganWaktu = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('koneksi lambat / terputus')), ms))]);
 
 docConfig.onSnapshot(s => { cfg = s.data() || {}; setJudul(cfg.judul); route(); },
@@ -78,6 +90,7 @@ function tampil(nama) {
         <label>Nama sekolah</label><select name="sekolah" required disabled><option value="">— pilih kecamatan dulu —</option></select>
         <button class="btn block" style="margin-top:16px">Lanjut</button></form>
       <p id="pesan" class="warn center"></p></div>
+      ${kontakHtml()}
       <p class="mut center"><a href="${LINK_RADAR}" target="_blank" rel="noopener">Baca berita di RadarMadura.id</a></p>`;
     const f = $('#fMasuk').elements;
     f.kec.onchange = () => {
@@ -119,28 +132,31 @@ function tampil(nama) {
     else if (cfg.bukaAt && nowServer() < cfg.bukaAt) info = `Dibuka ${fmtTgl(cfg.bukaAt)}.`;
     app.innerHTML = `<div class="card center">${identitasHtml()}
       <div class="big">${ikon('jam')}</div><h3>${info || 'Menunggu lomba dimulai panitia…'}</h3>
-      <p class="mut">${esc(babakNama())} · ${cfg.jumlahSoal || 50} soal pilihan ganda · ${durasiTeks()}${cfg.tutupAt ? `<br>Ditutup ${fmtTgl(cfg.tutupAt)}` : ''}<br>Halaman ini otomatis berubah saat lomba dibuka.</p></div>${aturanHtml()}${tombolKeluar()}`;
+      <p class="mut">${esc(babakNama())} · ${cfg.jumlahSoal || 50} soal pilihan ganda · ${durasiTeks()}${cfg.tutupAt ? `<br>Ditutup ${fmtTgl(cfg.tutupAt)}` : ''}<br>Halaman ini otomatis berubah saat lomba dibuka.</p></div>${aturanHtml()}${kontakHtml()}${tombolKeluar()}`;
     pasangKeluar();
   } else if (nama === 'siap') {
     app.innerHTML = `<div class="card center">${identitasHtml()}
       <div class="big">${ikon('mulai')}</div><h3>Lomba sudah dibuka</h3>
       <p class="mut">${esc(babakNama())} · ${cfg.jumlahSoal || 50} soal · ${durasiTeks()}${cfg.tutupAt ? `<br>Terakhir mulai sebelum ${fmtTgl(cfg.tutupAt)}` : ''}</p>
       <p><b>Waktu mulai berjalan saat kamu menekan tombol di bawah.</b></p>
-      <button class="btn or block" id="bMulai" style="font-size:18px;padding:16px">Mulai Mengerjakan</button></div>${aturanHtml()}${tombolKeluar()}`;
+      <button class="btn or block" id="bMulai" style="font-size:18px;padding:16px">Mulai Mengerjakan</button></div>${aturanHtml()}${kontakHtml()}${tombolKeluar()}`;
     $('#bMulai').onclick = () => { $('#bMulai').disabled = true; mulaiKerja(); };
     pasangKeluar();
   } else if (nama === 'selesai') {
+    const henti = st.henti ? `<div class="card" style="border-color:#dc2626"><b>Ujian berakhir otomatis</b><p class="mut" style="margin:6px 0 10px">Kamu keluar dari aplikasi ${(st.keluar || 0) - (st.dasarKeluar || 0)} kali, sehingga jawaban yang sudah terisi langsung dikumpulkan. Jika ini karena kendala teknis, laporkan ke panitia. Bila panitia memberi kesempatan, tekan tombol di bawah.</p>
+      <button class="btn ghost block" id="bIzin">Panitia sudah memberi izin? Cek di sini</button><p class="warn center" id="izinMsg" style="margin:8px 0 0"></p></div>${kontakHtml()}` : '';
     app.innerHTML = `<div class="card center"><div class="big">${ikon('ok')}</div><h2>Terima kasih, ${esc(st.nama)}!</h2>
       <p class="mut">Jawabanmu sudah diterima server.</p>
       ${hasilHtml()}<p class="mut">Hasil diumumkan panitia dan Jawa Pos Radar Madura.</p>
-      <a class="btn ghost" href="${LINK_RADAR}" target="_blank" rel="noopener">Buka RadarMadura.id</a> <a class="btn ghost" href="papan.html">Papan skor</a></div>
+      <a class="btn ghost" href="${LINK_RADAR}" target="_blank" rel="noopener">Buka RadarMadura.id</a> <a class="btn ghost" href="papan.html">Papan skor</a></div>${henti}
       <p class="center mut">HP dipakai bergantian? Peserta berikutnya bisa masuk dengan datanya sendiri.</p>${tombolKeluar('Peserta berikutnya')}`;
     pasangKeluar();
+    const bi = $('#bIzin'); if (bi) bi.onclick = cekIzin;
   } else if (nama === 'ditutup') {
-    app.innerHTML = `<div class="card center"><div class="big">${ikon('kunci')}</div><h2>Lomba sudah ditutup</h2><p class="mut">${esc(st.nama)}, silakan hubungi panitia/guru pendamping.</p><a class="btn ghost" href="papan.html">Papan skor</a></div>${tombolKeluar()}`;
+    app.innerHTML = `<div class="card center"><div class="big">${ikon('kunci')}</div><h2>Lomba sudah ditutup</h2><p class="mut">${esc(st.nama)}, silakan hubungi panitia/guru pendamping.</p><a class="btn ghost" href="papan.html">Papan skor</a></div>${kontakHtml()}${tombolKeluar()}`;
     pasangKeluar();
   } else if (nama === 'terkunci') {
-    app.innerHTML = `<div class="card center"><div class="big">${ikon('stop')}</div><h2>Nama ini sudah dipakai</h2><p class="mut">Data ini sudah digunakan mengerjakan di perangkat lain. Jika kamu berbeda dengan teman yang bernama sama, tambahkan nama belakang/inisial. Selain itu hubungi pengawas/panitia.</p><button class="btn" id="bUlang">Coba lagi</button></div>${tombolKeluar('Ganti data')}`;
+    app.innerHTML = `<div class="card center"><div class="big">${ikon('stop')}</div><h2>Nama ini sudah dipakai</h2><p class="mut">Data ini sudah digunakan mengerjakan di perangkat lain. Jika kamu berbeda dengan teman yang bernama sama, tambahkan nama belakang/inisial. Selain itu hubungi pengawas/panitia.</p><button class="btn" id="bUlang">Coba lagi</button></div>${kontakHtml()}${tombolKeluar('Ganti data')}`;
     pasangKeluar();
     $('#bUlang').onclick = () => { dimuat = false; route(); };
   } else if (nama === 'tanpasoal') {
@@ -158,7 +174,8 @@ const durasiTeks = () => cfg.timer === 'soal' ? `${cfg.detikPerSoal || 30} detik
 const aturanHtml = () => `<div class="card"><b>Tata tertib</b><ul class="mut" style="padding-left:18px;margin:8px 0 0">
   <li>Kerjakan sendiri, tanpa bantuan.</li>
   ${cfg.timer === 'soal' ? '<li>Jawaban terkunci begitu dipilih. Setiap soal punya batas waktu; jika habis, soal dianggap kosong dan otomatis lanjut.</li>' : '<li>Jawaban boleh diganti sebelum kamu menekan “Selesai & kumpulkan”. Soal boleh dikerjakan tidak berurutan lewat nomor soal.</li>'}
-  <li>Jangan keluar dari aplikasi — panitia dapat melihat jumlah keluar-aplikasi.</li>
+  ${batasKeluar() ? `<li><b>Jangan keluar dari aplikasi.</b> Jika keluar ${batasKeluar()} kali, ujian berakhir otomatis dan jawaban yang sudah terisi langsung dikumpulkan.</li>` : '<li>Jangan keluar dari aplikasi — panitia dapat melihat jumlah keluar-aplikasi.</li>'}
+  <li>Ada kendala sinyal atau HP mati? Segera lapor ke panitia/pengawas agar diberi toleransi.</li>
   <li>Jika aplikasi tertutup atau sinyal hilang, buka lagi di HP yang sama: jawaban tidak hilang.</li>
   <li>Saat waktu habis, jawaban dikirim otomatis.</li></ul></div>`;
 const tombolKeluar = (label = 'Bukan saya / ganti data') => `<p class="center"><button class="btn ghost sm" id="bKeluar">${label}</button></p>`;
@@ -173,6 +190,18 @@ async function klaim() {
     if (s && s.exists) return s.data().dev === DEV;
     throw e;
   }
+}
+// Panitia memberi kesempatan lagi = menghapus dokumen jawaban peserta. Jawaban terisi & waktu awal tetap dipakai.
+async function cekIzin() {
+  const msg = $('#izinMsg'), b = $('#bIzin'); if (b) b.disabled = true; if (msg) msg.textContent = 'Memeriksa…';
+  try {
+    const s = await denganWaktu(fs.collection('jawaban').doc(st.sesi + '_' + st.kode).get({ source: 'server' }), 15000);
+    if (s.exists) { if (msg) msg.textContent = 'Belum ada izin dari panitia.'; if (b) b.disabled = false; return; }
+    if (cfg.status === 'selesai' || nowServer() >= batasPeserta(cfg, st.mulai)) { if (msg) msg.textContent = 'Waktu mengerjakan sudah habis.'; if (b) b.disabled = false; return; }
+    $$('.ovl').forEach(x => x.remove());
+    st.terkirim = false; st.kirim = false; st.henti = false; st.dasarKeluar = st.keluar || 0; st.pergi = 0; delete st.hasil; simpan();
+    dimuat = false; mengirim = false; route();
+  } catch (e) { if (msg) msg.textContent = 'Gagal terhubung: ' + e.message; if (b) b.disabled = false; }
 }
 async function mulaiKerja() {
   if (dimuat) return; dimuat = true; layar = 'memuat';
@@ -209,6 +238,7 @@ async function mulaiKerja() {
     simpan();
     layar = 'kerja'; document.body.classList.add('ujian'); renderSoal();
     clearInterval(timerInt); timerInt = setInterval(tick, 250);
+    catatKembali(); // aplikasi sempat ditutup/ditinggalkan lalu dibuka lagi
   } catch (e) {
     dimuat = false; layar = 'galat'; document.body.classList.remove('ujian');
     app.innerHTML = `<div class="card center">Gagal memuat soal (${esc(e.message)}).<br><br><button class="btn" id="ulang">Coba lagi</button></div>`;
@@ -314,7 +344,7 @@ function selesaikan(otomatis) {
   kirim(otomatis && cfg.jadwal === 'serentak');
 }
 async function kirim(denganJeda) {
-  if (mengirim || st.terkirim) return; mengirim = true; layar = 'kirim'; document.body.classList.remove('ujian'); clearInterval(timerInt);
+  if (mengirim || st.terkirim) return; mengirim = true; layar = 'kirim'; st.pergi = 0; document.body.classList.remove('ujian'); clearInterval(timerInt);
   const n = Object.values(st.jaw).filter(v => v !== -1).length;
   app.innerHTML = `<div class="card center"><div class="big">${ikon('kirim')}</div><h3>Mengirim jawaban…</h3><p class="mut">${n} jawaban. Jangan tutup aplikasi.</p><p class="mut" id="kirimInfo"></p></div>`;
   if (denganJeda) await new Promise(r => setTimeout(r, Math.random() * 15000)); // sebar kiriman serentak
@@ -346,6 +376,28 @@ function hitungLokal() {
   return { benar, salah, kosong: n - benar - salah, skor: benar * (cfg.poinBenar ?? 2) + salah * (cfg.poinSalah ?? 0), durasiMs: dur, n };
 }
 const hasilHtml = () => st.hasil ? `<div class="skor"><div class="stats"><div class="stat"><b>${st.hasil.skor}</b><span>Skor</span></div><div class="stat"><b>${st.hasil.benar}</b><span>Benar</span></div><div class="stat"><b>${st.hasil.salah}</b><span>Salah</span></div><div class="stat"><b>${st.hasil.kosong}</b><span>Kosong</span></div><div class="stat"><b>${fmtTime(st.hasil.durasiMs)}</b><span>Waktu</span></div></div></div>` : '';
+// Keluar aplikasi: dicatat saat kembali (>= 2 detik). Mencapai batas → jawaban otomatis dikumpulkan.
+function peringatan(html) {
+  $$('.ovl').forEach(x => x.remove());
+  const o = document.createElement('div'); o.className = 'ovl';
+  o.innerHTML = `<div class="card center"><div class="big">${ikon('stop')}</div>${html}<button class="btn block" style="margin-top:14px">Mengerti</button></div>`;
+  o.querySelector('button').onclick = () => o.remove(); document.body.appendChild(o);
+}
+function catatKembali() {
+  if (!st.pergi) return;
+  const lama = Date.now() - st.pergi; st.pergi = 0;
+  if (layar !== 'kerja' || lama < JEDA_KELUAR) { simpan(); return; }
+  st.keluar = (st.keluar || 0) + 1;
+  const batas = batasKeluar(), pakai = st.keluar - (st.dasarKeluar || 0);
+  if (batas > 0 && pakai >= batas) {
+    st.henti = true; simpan();
+    peringatan(`<h3>Ujian berakhir otomatis</h3><p class="mut">Kamu sudah keluar dari aplikasi ${pakai} kali. Jawaban yang sudah terisi dikumpulkan sekarang.</p>`);
+    return selesaikan(false);
+  }
+  simpan();
+  if (batas > 0) peringatan(`<h3>Kamu keluar dari aplikasi</h3><p class="mut">Tercatat <b>${pakai} dari ${batas}</b> kali. Jika mencapai ${batas} kali, ujian berakhir otomatis dan jawaban langsung dikumpulkan.</p>`);
+}
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && layar === 'kerja') { st.keluar = (st.keluar || 0) + 1; simpan(); }
+  if (document.hidden) { if (layar === 'kerja' && !st.pergi) { st.pergi = Date.now(); simpan(); } }
+  else catatKembali();
 });

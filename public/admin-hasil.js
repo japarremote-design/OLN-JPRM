@@ -30,6 +30,16 @@ const lihat = id => !$('#' + id).classList.contains('hide');
 
 // ---------- penilaian (di perangkat admin; kunci tidak pernah dikirim ke HP peserta) ----------
 const PREDIKAT = ['', 'Juara 1', 'Juara 2', 'Juara 3', 'Harapan 1'];
+const batasKel = () => cfg && cfg.batasKeluar != null ? Math.max(0, +cfg.batasKeluar || 0) : 3;
+// Beri kesempatan lagi: hapus dokumen jawaban saja (klaim tetap). Peserta menekan "Cek izin" di HP-nya, lalu lanjut dengan jawaban & waktu awal yang sama.
+async function kesempatanLagi(kode) {
+  const sid = sesiDipilih, s = skor.find(x => x.kode === kode);
+  if (!s) return;
+  if (sid !== cfg.sesi || cfg.status !== 'mulai') return toast('Hanya bisa saat sesi ini sedang berlangsung.');
+  if (!confirm(`Beri kesempatan lagi untuk ${s.nama}?\nJawaban yang terkirim dihapus; peserta melanjutkan dari jawaban terakhir dengan sisa waktu semula setelah menekan “Cek di sini” di HP-nya. Hitungan keluar-aplikasi dimulai ulang dari 0.`)) return;
+  try { await fs.collection('jawaban').doc(sid + '_' + kode).delete(); toast('Kesempatan diberikan. Minta peserta menekan tombol cek izin.'); }
+  catch (e) { toast('Gagal: ' + e.message); }
+}
 function hitungSkor() {
   const S = sesiMeta();
   if (!S) { skor = []; kirimSet = new Set(); return renderSemua(); }
@@ -46,7 +56,7 @@ function hitungSkor() {
       benar, salah, kosong: Math.max(0, n - benar - salah), dijawab: benar + salah, total: n,
       skor: benar * (S.poinBenar ?? 2) + salah * (S.poinSalah ?? 0),
       durasiMs: mulai && kirim ? Math.min(Math.max(0, kirim - mulai), dur || Infinity) : null,
-      kirimAt: kirim, keluar: +h.keluar || 0, telat: !!(kirim && batas && kirim > batas + 5 * 60000)
+      kirimAt: kirim, keluar: +h.keluar || 0, henti: batasKel() > 0 && (+h.keluar || 0) >= batasKel(), telat: !!(kirim && batas && kirim > batas + 5 * 60000)
     };
   });
   urutkanSkor(skor); skor.sort((a, b) => a.telat - b.telat); // kiriman terlambat di bawah
@@ -82,10 +92,11 @@ function renderHasil() {
   $('#tbHasil').innerHTML = !arr.length ? '<tr><td colspan="11" class="mut center">Belum ada kiriman.</td></tr>' : arr.slice(0, batasH).map(s => `
     <tr><td><span class="kls k${esc(s.kelas)}">Kelas ${esc(s.kelas)}</span></td><td><b>${s.rk || '–'}</b></td><td>${s.rkKec || '–'}${s.predikat ? `<br><span class="pill mulai">${s.predikat}</span>` : ''}</td><td><b>${esc(s.nama)}</b><br><span class="mut">${esc(s.asal)} · Kec. ${esc(s.kec)}</span></td>
     <td>${s.benar}</td><td>${s.salah}</td><td>${s.kosong}</td><td><b>${s.skor}</b></td>
-    <td>${s.telat ? '<span class="pill selesai">terlambat</span>' : fmtTime(s.durasiMs || 0)}</td><td>${s.keluar ? `<span class="pill selesai">${s.keluar}×</span>` : '0'}</td>
-    <td><button class="btn ghost sm" data-reset="${s.kode}">Reset</button></td></tr>`).join('');
+    <td>${s.telat ? '<span class="pill selesai">terlambat</span>' : fmtTime(s.durasiMs || 0)}</td><td>${s.keluar ? `<span class="pill selesai">${s.keluar}×</span>${s.henti ? '<br><small class="warn">mencapai batas</small>' : ''}` : '0'}</td>
+    <td>${s.henti ? `<button class="btn or sm" data-izin="${s.kode}">Beri kesempatan</button><br>` : ''}<button class="btn ghost sm" data-reset="${s.kode}">Reset</button></td></tr>`).join('');
   $('#bMoreH').classList.toggle('hide', arr.length <= batasH);
   $$('#tbHasil [data-reset]').forEach(b => b.onclick = () => resetPeserta(b.dataset.reset));
+  $$('#tbHasil [data-izin]').forEach(b => b.onclick = () => kesempatanLagi(b.dataset.izin));
   const per = rekapKec(daftar);
   $('#tbRekap').innerHTML = per.map(r => `<tr><td>${esc(r.kec)}</td><td>${rosterMuat ? r.daftar : '–'}</td><td>${r.kirim}</td><td>${r.maks ?? '-'}</td><td>${r.rata ?? '-'}</td></tr>`).join('') || '<tr><td colspan="5" class="mut center">–</td></tr>';
 }
