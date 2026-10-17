@@ -29,10 +29,12 @@
     <div><span id="st" class="pill">-</span> <span id="info" style="opacity:.85"></span></div>
     <span class="timer" id="tmr">--:--</span>
   </div>
-  <div id="kontrol" class="hide row" style="margin-bottom:12px"><select id="selKelas"><option value="3">Kelas 3</option><option value="4">Kelas 4</option><option value="5">Kelas 5</option></select><select id="selKec"></select></div>
+  <div id="kontrol" class="hide row" style="margin-bottom:12px"><select id="selKelas"><option value="3">Kelas 3</option><option value="4">Kelas 4</option><option value="5">Kelas 5</option></select><select id="selKec"></select><input id="cari" type="search" placeholder="Cari nama atau sekolah…" autocomplete="off" style="flex:1;min-width:180px"></div>
   <p class="mut" style="font-size:12px;margin:-4px 0 10px;opacity:.8">Pilih kecamatan untuk melihat Juara 1, 2, 3 dan Harapan 1 tiap kelas.</p>
   <div class="lb-row hd"><span>#</span><span>Peserta</span><span style="text-align:right">Benar</span><span style="text-align:right">Skor</span></div>
   <div id="list"></div>
+  <p class="center" id="jml" style="opacity:.8;font-size:13px;margin:10px 0"></p>
+  <p class="center"><button type="button" class="btn ghost hide" id="more">Tampilkan lebih banyak</button></p>
 </div>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>

@@ -122,6 +122,17 @@ $('#bEkspor').onclick = async () => {
 };
 
 // ---------- papan skor publik (diperbarui tiap ±30 detik bila berubah) ----------
+// Seluruh peserta per kelas untuk papan (1 dokumen per kelas, baris = teks dipisah TAB: nama, sekolah, kecamatan, benar, skor, durasiMs).
+// Firestore tak mendukung array bersarang, jadi tiap baris berupa string. Diurutkan sesuai peringkat.
+const semuaTerakhir = {};
+function kirimSemua(aktif) {
+  KELAS_LOMBA.forEach(k => {
+    const on = papanTampil && cfg.papanSemua !== false;
+    const rows = on ? aktif.filter(s => s.kelas === k).map(s => [s.nama, s.asal, s.kec, s.benar, s.skor, s.durasiMs == null ? '' : Math.round(s.durasiMs)].join('\t')) : [];
+    const isi = JSON.stringify([cfg.sesi, on, rows]); if (semuaTerakhir[k] === isi) return; semuaTerakhir[k] = isi;
+    fs.collection('publik').doc('semua_' + k).set({ sesi: cfg.sesi, tampil: on, n: rows.length, rows, update: SERVER_TS }).catch(() => { semuaTerakhir[k] = ''; });
+  });
+}
 function kirimPapan() {
   if (!cfg.sesi || sesiDipilih !== cfg.sesi || sesiDengar !== cfg.sesi) return;
   const aktif = skor.filter(s => !s.telat), ring = s => ({ n: s.nama, s: s.asal, kc: s.kec, k: s.kelas, b: s.benar, sk: s.skor, d: s.durasiMs });
@@ -130,6 +141,7 @@ function kirimPapan() {
     KELAS_LOMBA.forEach(k => { const a = aktif.filter(s => s.kelas === k); tot[k] = a.length; kls[k] = a.slice(0, 30).map(ring); });
     aktif.forEach(s => { const per = (kec[s.kec] = kec[s.kec] || {}); const a = (per[s.kelas] = per[s.kelas] || []); if (a.length < 10) a.push(ring(s)); });
   }
+  kirimSemua(aktif);
   const isi = JSON.stringify([cfg.sesi, cfg.babak, papanTampil, aktif.length, kls, kec]);
   if (isi === papanTerakhir) return; papanTerakhir = isi;
   docPapan.set({ sesi: cfg.sesi, babak: cfg.babak, tampil: papanTampil, total: aktif.length, tot, kls, kec, update: SERVER_TS }).catch(() => { papanTerakhir = ''; });

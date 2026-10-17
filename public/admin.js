@@ -8,7 +8,7 @@ const pilihBank = () => { bank = bankDari(babakSoal, kelasSoal); soalBerubah(); 
 const WIB_MS = s => new Date(s).getTime();
 const DEFAULT_CFG = {
   judul: DEFAULT_JUDUL, babak: 'penyisihan', jadwal: 'jendela', timer: 'total', durasiMenit: 60, detikPerSoal: 30,
-  poinBenar: 2, poinSalah: 0, batasKeluar: 3, acakSoal: true, acakOpsi: false, tampilSkor: false, daftarMandiri: true, status: 'menunggu', jumlahSoal: 50,
+  poinBenar: 2, poinSalah: 0, batasKeluar: 3, papanSemua: true, acakSoal: true, acakOpsi: false, tampilSkor: false, daftarMandiri: true, status: 'menunggu', jumlahSoal: 50,
   bukaAt: WIB_MS('2026-10-17T08:00:00+07:00'), tutupAt: WIB_MS('2026-10-17T11:00:00+07:00')
 };
 const NAMA_BABAK = { gladi: 'Gladi', penyisihan: 'Penyisihan', final: 'Final' };
@@ -75,7 +75,7 @@ function isiFormCfg() {
   const f = form.elements;
   ['judul', 'babak', 'jadwal', 'timer', 'durasiMenit', 'detikPerSoal', 'poinBenar', 'poinSalah'].forEach(k => f[k].value = cfg[k]);
   f.tampilSkor.checked = !!cfg.tampilSkor; f.daftarMandiri.checked = cfg.daftarMandiri !== false;
-  f.batasKeluar.value = cfg.batasKeluar != null ? cfg.batasKeluar : 3;
+  f.batasKeluar.value = cfg.batasKeluar != null ? cfg.batasKeluar : 3; f.papanSemua.checked = cfg.papanSemua !== false;
   f.bukaAt.value = keInputWaktu(cfg.bukaAt); f.tutupAt.value = keInputWaktu(cfg.tutupAt);
   f.acakSoal.checked = !!cfg.acakSoal; f.acakOpsi.checked = !!cfg.acakOpsi;
   const kunci = terkunci();
@@ -90,9 +90,9 @@ $('#fCfg').onsubmit = async e => {
   if (waktu.bukaAt && waktu.tutupAt && waktu.tutupAt <= waktu.bukaAt) return toast('Waktu tutup harus setelah waktu buka.');
   try {
     const bk = Math.round(+f.batasKeluar.value);
-    const umum = { tampilSkor: f.tampilSkor.checked, daftarMandiri: f.daftarMandiri.checked, batasKeluar: f.batasKeluar.value === '' || isNaN(bk) ? 3 : Math.max(0, Math.min(50, bk)) };
+    const umum = { tampilSkor: f.tampilSkor.checked, daftarMandiri: f.daftarMandiri.checked, papanSemua: f.papanSemua.checked, batasKeluar: f.batasKeluar.value === '' || isNaN(bk) ? 3 : Math.max(0, Math.min(50, bk)) };
     if (terkunci()) {
-      await docConfig.update({ ...waktu, daftarMandiri: umum.daftarMandiri, batasKeluar: umum.batasKeluar });
+      await docConfig.update({ ...waktu, daftarMandiri: umum.daftarMandiri, batasKeluar: umum.batasKeluar, papanSemua: umum.papanSemua });
       await fs.collection('sesi').doc(cfg.sesi).set(waktu, { merge: true });
     } else {
       await docConfig.update({
