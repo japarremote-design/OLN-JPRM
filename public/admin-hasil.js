@@ -204,9 +204,16 @@ $('#bTetapkan').onclick = async () => {
   try {
     const set = new Set(calon.map(s => s.kode)), ops = [], lama = await fs.collection('peserta').where('finalis', '==', true).get();
     lama.forEach(d => { if (!set.has(d.id)) ops.push(b => b.update(refPeserta(d.id), { finalis: false })); });
-    const sudah = new Set(lama.docs.map(d => d.id)); set.forEach(k => { if (!sudah.has(k)) ops.push(b => b.update(refPeserta(k), { finalis: true })); });
+    const sudah = new Set(lama.docs.map(d => d.id)), baru = calon.filter(s => !sudah.has(s.kode)), hilang = [];
+    // dokumen peserta bisa sudah terhapus (mis. 'Bersihkan data gladi'): buat ulang dari data hasil
+    for (let i = 0; i < baru.length; i += 25) {
+      const grup = baru.slice(i, i + 25), ada = await Promise.all(grup.map(s => refPeserta(s.kode).get()));
+      grup.forEach((s, j) => { if (!ada[j].exists) hilang.push(s); });
+    }
+    if (hilang.length) await simpanBatch(hilang.map(s => b => b.set(refPeserta(s.kode), { n: String(s.nama), kc: String(s.kec), s: String(s.asal), k: String(s.kelas) })));
+    baru.forEach(s => ops.push(b => b.update(refPeserta(s.kode), { finalis: true })));
     await simpanBatch(ops); if (rosterMuat) muatRoster(true);
-    toast(`${calon.length} finalis ditetapkan`);
+    toast(`${calon.length} finalis ditetapkan` + (hilang.length ? ` (${hilang.length} data peserta dibuat ulang)` : ''));
   } catch (e) { toast('Gagal: ' + e.message); }
 };
 $('#bUnduhFinalis').onclick = () => {
