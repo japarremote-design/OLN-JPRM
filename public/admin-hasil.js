@@ -166,7 +166,19 @@ function bagiKuota(total, n, mode) { // n: {kec: jumlah peserta}
 }
 // Jumlah yang sudah mengerjakan per (kecamatan | kelas) → dasar pembagian kuota finalis
 const jumlahPerKec = () => { const m = {}; skor.filter(s => !s.telat && s.kec).forEach(s => { const k = s.kec + '|' + s.kelas; m[k] = (m[k] || 0) + 1; }); return m; };
-function finalisDibuka() { hasilDibuka(); if (!Object.keys(kuota).length && skor.length) isiKuota('prop'); renderFinalis(); }
+let kuotaMuat = false;
+async function finalisDibuka() {
+  hasilDibuka();
+  if (!Object.keys(kuota).length && skor.length && !kuotaMuat) {
+    kuotaMuat = true;
+    try { // pakai kuota yang terakhir ditetapkan (tersimpan), bila ada
+      const d = await fs.collection('publik').doc('kuota_finalis').get();
+      if (d.exists && d.data().kuota) { kuota = JSON.parse(d.data().kuota); if (d.data().total) $('#fTotal').value = d.data().total; }
+    } catch (e) {}
+    if (!Object.keys(kuota).length) isiKuota('prop');
+  }
+  renderFinalis();
+}
 function isiKuota(mode) { kuota = bagiKuota(Math.max(1, +$('#fTotal').value || 300), jumlahPerKec(), mode === 'rata' ? 'rata' : 'prop'); renderFinalis(); }
 $('#bProp').onclick = () => isiKuota('prop'); $('#bRata').onclick = () => isiKuota('rata');
 $('#fTotal').oninput = () => isiKuota('prop');
@@ -213,6 +225,7 @@ $('#bTetapkan').onclick = async () => {
     if (hilang.length) await simpanBatch(hilang.map(s => b => b.set(refPeserta(s.kode), { n: String(s.nama), kc: String(s.kec), s: String(s.asal), k: String(s.kelas) })));
     baru.forEach(s => ops.push(b => b.update(refPeserta(s.kode), { finalis: true })));
     await simpanBatch(ops); if (rosterMuat) muatRoster(true);
+    fs.collection('publik').doc('kuota_finalis').set({ total: +$('#fTotal').value || calon.length, kuota: JSON.stringify(kuota), n: calon.length, update: SERVER_TS }).catch(() => {});
     toast(`${calon.length} finalis ditetapkan` + (hilang.length ? ` (${hilang.length} data peserta dibuat ulang)` : ''));
   } catch (e) { toast('Gagal: ' + e.message); }
 };
