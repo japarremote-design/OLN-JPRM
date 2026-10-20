@@ -73,7 +73,7 @@ function renderSemua() {
   $('#jmlHasil').textContent = skor.length ? `(${skor.length})` : '';
   if (lihat('tHasil')) renderHasil();
   if (lihat('tPeserta') && rosterMuat) renderPeserta();
-  if (lihat('tFinalis')) renderFinalis();
+  if (lihat('tFinalis')) { renderFinalis(); if (skor.length && !kuotaMuat) muatKuota().then(() => renderFinalis()); }
 }
 const terdaftarSesi = () => { const S = sesiMeta(); return rosterMuat ? [...roster.entries()].filter(([, r]) => S && S.babak === 'final' ? r.finalis : true) : []; };
 
@@ -169,6 +169,10 @@ const jumlahPerKec = () => { const m = {}; skor.filter(s => !s.telat && s.kec).f
 let kuotaMuat = false;
 async function finalisDibuka() {
   hasilDibuka();
+  await muatKuota();
+  renderFinalis();
+}
+async function muatKuota() {
   if (!Object.keys(kuota).length && skor.length && !kuotaMuat) {
     kuotaMuat = true;
     try { // pakai kuota yang terakhir ditetapkan (tersimpan), bila ada
@@ -177,7 +181,6 @@ async function finalisDibuka() {
     } catch (e) {}
     if (!Object.keys(kuota).length) isiKuota('prop');
   }
-  renderFinalis();
 }
 function isiKuota(mode) { kuota = bagiKuota(Math.max(1, +$('#fTotal').value || 300), jumlahPerKec(), mode === 'rata' ? 'rata' : 'prop'); renderFinalis(); }
 $('#bProp').onclick = () => isiKuota('prop'); $('#bRata').onclick = () => isiKuota('rata');
