@@ -1,7 +1,7 @@
 # Olimpiade Literasi & Numerasi SD — Hari Jadi Bangkalan ke-495
 Jawa Pos Radar Madura · dibuat oleh Qfaz Digital
 
-PWA (bisa dipasang di Android/iPhone, opsional dibungkus jadi APK) + Firebase Firestore + Vercel.
+PWA (bisa dipasang di Android/iPhone, opsional dibungkus jadi APK) + Firebase Firestore + Vercel..
 
 ## Alur lomba
 - **Login peserta tanpa kode**: nama lengkap, kelas (3/4/5), kecamatan, sekolah (dropdown dari 613 SD / 18 kecamatan). Peserta yang belum ada di daftar panitia otomatis terdaftar. Nama dicocokkan tanpa peduli huruf besar/kecil, titik, atau spasi ganda.
