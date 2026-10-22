@@ -41,6 +41,8 @@ function route() {
   if (!st.kode) return tampil('masuk');
   if (!cfg.sesi) return tampil('belum');
   if (st.sesi !== cfg.sesi) return gantiSesi();
+  // final: wajib punya kunci login perangkat, dan kunci diperiksa ulang sekali tiap aplikasi dibuka (sebelum mulai mengerjakan)
+  if (cfg.babak === 'final' && st.finalis && !st.mulai && !st.terkirim && (st.kunci !== cfg.sesi || kunciCek !== cfg.sesi)) { st.sesi = ''; return gantiSesi(); }
   if (cfg.babak === 'final' && !st.finalis) return tampil('tidaklolos');
   if (!(cfg.paketKelas || {})[st.kelas] && cfg.status === 'mulai') return tampil('tanpasoal');
   if (st.terkirim) { resetLokal(); return tampil('selesai'); }
@@ -64,11 +66,32 @@ function jadwalkanBangun(t) {
 async function gantiSesi() {
   if (gantiBusy) return; gantiBusy = true;
   const dasar = { dev: DEV, kode: st.kode, nama: st.nama, kelas: st.kelas, sekolah: st.sekolah, kec: st.kec, finalis: st.finalis };
-  st = { ...dasar, sesi: cfg.sesi, jaw: {}, keluar: 0 }; resetLokal();
   if (cfg.babak === 'final') {
-    try { const d = await ambilPeserta(st.kode); if (d) st.finalis = !!d.finalis; } catch (e) { /* biarkan, ada tombol cek ulang */ }
-  }
+    // Final: satu peserta hanya boleh login di satu perangkat. Perangkat pertama yang masuk memegang kunci; perangkat lain ditolak.
+    st = { ...dasar, sesi: '', jaw: {}, keluar: 0 }; resetLokal();
+    const sesiIni = cfg.sesi;
+    try {
+      const d = await ambilPeserta(st.kode); if (d) st.finalis = !!d.finalis;
+      if (st.finalis) {
+        if (!(await kunciLogin(sesiIni))) { simpan(); gantiBusy = false; return tampil('loginbeda'); }
+        st.kunci = sesiIni; kunciCek = sesiIni;
+      }
+    } catch (e) { galatLogin = e.message; simpan(); gantiBusy = false; return tampil('loginerr'); }
+    st.sesi = sesiIni;
+  } else { st = { ...dasar, sesi: cfg.sesi, jaw: {}, keluar: 0 }; resetLokal(); }
   simpan(); gantiBusy = false; route();
+}
+let galatLogin = '', kunciCek = '';
+async function kunciLogin(sesi) {
+  const ref = fs.collection('loginfinal').doc(sesi + '_' + st.kode);
+  const s = await denganWaktu(ref.get({ source: 'server' }), 15000);
+  if (s.exists) return s.data().dev === DEV;
+  try { await denganWaktu(ref.set({ dev: DEV, at: SERVER_TS }), 15000); return true; }
+  catch (e) { // balapan: perangkat lain mendahului
+    const s2 = await ref.get({ source: 'server' }).catch(() => null);
+    if (s2 && s2.exists) return s2.data().dev === DEV;
+    throw e;
+  }
 }
 async function ambilPeserta(kode) {
   const s = await denganWaktu(fs.collection('peserta').doc(kode).get({ source: 'server' }), 15000);
@@ -82,7 +105,7 @@ function tampil(nama) {
     const kecs = DATA_SEKOLAH.map(x => x[0]);
     app.innerHTML = `<div class="card">
       <h2 style="margin-top:0">Masuk Peserta</h2>
-      <p class="mut">Isi data dengan benar, sama seperti di data sekolah. Setelah mulai mengerjakan, nama ini tidak bisa dipakai di HP lain.</p>
+      <p class="mut">Isi data dengan benar, sama seperti di data sekolah. ${cfg.babak === 'final' ? 'Akun ini hanya bisa dipakai di satu perangkat; perangkat lain akan ditolak.' : 'Setelah mulai mengerjakan, nama ini tidak bisa dipakai di HP lain.'}</p>
       <form id="fMasuk" autocomplete="off">
         <label>Nama lengkap</label><input name="nama" maxlength="60" autocapitalize="words" spellcheck="false" placeholder="Nama lengkap siswa" required>
         <label>Kelas</label><select name="kelas" required><option value="">— pilih kelas —</option>${KELAS_LOMBA.map(k => `<option value="${k}">Kelas ${k}</option>`).join('')}</select>
@@ -159,12 +182,18 @@ function tampil(nama) {
     app.innerHTML = `<div class="card center"><div class="big">${ikon('stop')}</div><h2>Nama ini sudah dipakai</h2><p class="mut">Data ini sudah digunakan mengerjakan di perangkat lain. Jika kamu berbeda dengan teman yang bernama sama, tambahkan nama belakang/inisial. Selain itu hubungi pengawas/panitia.</p><button class="btn" id="bUlang">Coba lagi</button></div>${kontakHtml()}${tombolKeluar('Ganti data')}`;
     pasangKeluar();
     $('#bUlang').onclick = () => { dimuat = false; route(); };
+  } else if (nama === 'loginbeda') {
+    app.innerHTML = `<div class="card center"><div class="big">${ikon('stop')}</div><h2>Akun ini sedang dipakai di perangkat lain</h2><p class="mut">${esc(st.nama)} sudah masuk di perangkat lain. Satu peserta hanya boleh memakai satu perangkat. Jika perangkat ini yang seharusnya dipakai, minta pengawas/panitia untuk mereset login, lalu tekan "Coba lagi".</p><button class="btn" id="bUlang">Coba lagi</button></div>${tombolKeluar('Ganti data')}`;
+    pasangKeluar(); $('#bUlang').onclick = () => route();
+  } else if (nama === 'loginerr') {
+    app.innerHTML = `<div class="card center"><div class="big">${ikon('alat')}</div><h3>Belum bisa memeriksa login</h3><p class="mut">${esc(galatLogin || 'koneksi bermasalah')}. Periksa sinyal, lalu coba lagi.</p><button class="btn" id="bUlang">Coba lagi</button></div>${tombolKeluar('Ganti data')}`;
+    pasangKeluar(); $('#bUlang').onclick = () => route();
   } else if (nama === 'tanpasoal') {
     app.innerHTML = `<div class="card center"><div class="big">${ikon('alat')}</div><h3>Soal untuk kelas ${esc(st.kelas)} belum disiapkan panitia.</h3></div>${tombolKeluar()}`; pasangKeluar();
   } else if (nama === 'tidaklolos') {
     app.innerHTML = `<div class="card center"><div class="big">${ikon('info')}</div><h2>Babak final khusus finalis</h2><p class="mut">${esc(st.nama)} belum terdaftar sebagai finalis. Terima kasih sudah berpartisipasi!</p>
       <button class="btn ghost" id="bCek">Cek lagi</button></div>${tombolKeluar()}`;
-    $('#bCek').onclick = async () => { try { const d = await ambilPeserta(st.kode); if (d) { st.finalis = !!d.finalis; simpan(); } } catch (e) { toast('Gagal terhubung'); } route(); };
+    $('#bCek').onclick = async () => { try { const d = await ambilPeserta(st.kode); if (d) { st.finalis = !!d.finalis; if (st.finalis) st.sesi = ''; simpan(); } } catch (e) { toast('Gagal terhubung'); } route(); };
     pasangKeluar();
   }
 }
@@ -209,6 +238,9 @@ async function mulaiKerja() {
   pesan('Menyiapkan soal…');
   try {
     if (!st.mulai) {
+      if (cfg.babak === 'final' && st.finalis && !(await kunciLogin(cfg.sesi))) { // kunci login sudah pindah ke perangkat lain (mis. direset panitia)
+        dimuat = false; st.sesi = ''; st.kunci = ''; kunciCek = ''; simpan(); return tampil('loginbeda');
+      }
       // Sudah pernah mengirim jawaban (mis. setelah ganti kode di HP yang sama)? Jangan mulai ulang.
       if (!(await denganWaktu(klaim(), 20000))) { // kode sudah diklaim HP lain: bila jawabannya sudah masuk → tampilkan "selesai", bila belum → terkunci
         const sdh = await denganWaktu(fs.collection('jawaban').doc(cfg.sesi + '_' + st.kode).get({ source: 'server' }), 20000);

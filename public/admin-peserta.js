@@ -79,9 +79,10 @@ function renderPeserta() {
   $('#tbP').innerHTML = !arr.length ? '<tr><td colspan="7" class="mut center">Belum ada data. Impor Excel di atas atau tunggu peserta mendaftar sendiri.</td></tr>' : arr.slice(0, batasP).map(([kode, r], i) => `
     <tr><td>${i + 1}</td><td>${esc(r.n)}${r.finalis ? ' <span class="pill mulai">finalis</span>' : ''}</td><td>${esc(r.k)}</td><td>${esc(r.s)}</td><td>${esc(r.kc)}</td>
     <td>${kirim.has(kode) ? '<span class="pill mulai">sudah kirim</span>' : '<span class="mut">–</span>'}</td>
-    <td style="white-space:nowrap"><button class="btn ghost sm" data-reset="${kode}" title="Hapus kunci perangkat & jawaban sesi terpilih">Reset</button> <button class="btn ghost sm" data-hapusp="${kode}">Hapus</button></td></tr>`).join('');
+    <td style="white-space:nowrap"><button class="btn ghost sm" data-reset="${kode}" title="Hapus kunci perangkat & jawaban sesi terpilih">Reset</button> <button class="btn ghost sm" data-rlogin="${kode}" title="Lepas kunci login perangkat (Final) agar peserta bisa masuk dari perangkat lain">Reset login</button> <button class="btn ghost sm" data-hapusp="${kode}">Hapus</button></td></tr>`).join('');
   $('#bMoreP').classList.toggle('hide', arr.length <= batasP);
   $$('[data-reset]').forEach(b => b.onclick = () => resetPeserta(b.dataset.reset));
+  $$('[data-rlogin]').forEach(b => b.onclick = () => resetLogin(b.dataset.rlogin));
   $$('[data-hapusp]').forEach(b => b.onclick = async () => {
     const r = roster.get(b.dataset.hapusp); if (!confirm(`Hapus peserta ${r.n} (${r.s})?`)) return;
     await refPeserta(b.dataset.hapusp).delete(); roster.delete(b.dataset.hapusp); renderPeserta();
@@ -89,6 +90,13 @@ function renderPeserta() {
 }
 ['#cariP', '#fKec', '#fKelas'].forEach(s => $(s).addEventListener('input', () => { batasP = 100; renderPeserta(); }));
 $('#bMoreP').onclick = () => { batasP += 200; renderPeserta(); };
+// Final: lepas kunci login perangkat saja (jawaban & waktu mulai tidak disentuh)
+async function resetLogin(kode) {
+  const sid = (typeof sesiDipilih !== 'undefined' && sesiDipilih) || cfg.sesi; const r = roster.get(kode);
+  if (!confirm(`Reset login ${r.n}?\nKunci perangkat saat login dilepas, sehingga peserta bisa masuk dari perangkat lain. Jawaban tidak dihapus.`)) return;
+  try { await fs.collection('loginfinal').doc(sid + '_' + kode).delete(); toast('Login di-reset'); }
+  catch (e) { toast('Gagal: ' + e.message); }
+}
 async function resetPeserta(kode) {
   const sid = (typeof sesiDipilih !== 'undefined' && sesiDipilih) || cfg.sesi; const r = roster.get(kode);
   if (!confirm(`Reset ${r.n}?\nKunci perangkat dan jawaban pada sesi terpilih dihapus, sehingga peserta bisa mengerjakan ulang dari awal.`)) return;
