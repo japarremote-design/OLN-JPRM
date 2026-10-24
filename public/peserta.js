@@ -429,6 +429,10 @@ function catatKembali() {
   simpan();
   if (batas > 0) peringatan(`<h3>Kamu keluar dari aplikasi</h3><p class="mut">Tercatat <b>${pakai} dari ${batas}</b> kali. Jika mencapai ${batas} kali, ujian berakhir otomatis dan jawaban langsung dikumpulkan.</p>`);
 }
+// Saat ujian: blok teks / salin / menu tekan-lama dimatikan (cegah "cari di Google" atau Google Lens dari soal)
+const lagiUjian = () => document.body.classList.contains('ujian');
+['contextmenu', 'selectstart', 'copy', 'cut', 'dragstart'].forEach(ev => document.addEventListener(ev, e => { if (lagiUjian()) e.preventDefault(); }, true));
+document.addEventListener('selectionchange', () => { if (lagiUjian()) { const s = window.getSelection && window.getSelection(); if (s && !s.isCollapsed) s.removeAllRanges(); } });
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { if (layar === 'kerja' && !st.pergi) { st.pergi = Date.now(); simpan(); } }
   else catatKembali();

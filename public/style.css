@@ -131,6 +131,9 @@ header.top{position:static}
 
 /* Saat ujian berlangsung, logo tidak bisa diketuk (mencegah keluar tak sengaja ke RadarMadura.id) */
 body.ujian header.top a.logo{pointer-events:none}
+/* Saat ujian: teks tidak bisa diblok/disalin dan gambar tidak bisa ditekan-lama (mencegah "cari di Google" / Google Lens dari teks & gambar soal) */
+body.ujian,body.ujian *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+body.ujian img{pointer-events:none;-webkit-user-drag:none}
 /* Kredit pembuat (footer) */
 .kredit{text-align:center;font-size:12px;color:#8a94a0;padding:22px 16px 30px}
 .kredit a{display:inline-flex;align-items:center;gap:5px;color:#6b7280;text-decoration:none;vertical-align:middle}

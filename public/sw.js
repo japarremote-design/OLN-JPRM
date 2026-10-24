@@ -1,6 +1,6 @@
 // Service worker: file tampilan peserta disimpan di perangkat (cache-first) supaya hemat permintaan ke server.
 // Setiap kali ada pembaruan aplikasi, naikkan nomor CACHE di bawah ini (mis. v14 → v15) agar semua perangkat memuat ulang.
-const CACHE = 'lcc-v16';
+const CACHE = 'lcc-v17';
 const ASET = ['index.html', 'style.css', 'common.js', 'pasang.js', 'peserta.js', 'manifest.json', 'logo.png', 'logo-495.png', 'logo-bangkalan.png', 'logo-dinas.png', 'data-sekolah.js', 'icon-192.png', 'icon-512.png', 'qfaz-logo.png', 'papan.html', 'papan.js'];
 const KUNCI = new Set(ASET.map(a => '/' + a));
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => Promise.all(ASET.map(a => c.add(new Request(a, { cache: 'reload' })).catch(() => {}))))); self.skipWaiting(); });
