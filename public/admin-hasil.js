@@ -65,7 +65,7 @@ function hitungSkor() {
   skor.forEach(s => { // peringkat dihitung per kelas (soal tiap kelas berbeda)
     if (s.telat) { s.rk = 0; s.rkKec = 0; s.predikat = ''; s.predKab = ''; return; }
     s.rk = rk[s.kelas] = (rk[s.kelas] || 0) + 1;
-    const key = s.kec + '|' + s.kelas; s.rkKec = rkc[key] = (rkc[key] || 0) + 1; s.predikat = PREDIKAT[s.rkKec] || ''; s.predKab = (sesiMeta() || {}).babak === 'final' ? (PREDKAB[s.rk] || '') : '';
+    const key = s.kec + '|' + s.kelas; s.rkKec = rkc[key] = (rkc[key] || 0) + 1; const fin = (sesiMeta() || {}).babak === 'final'; s.predikat = fin ? '' : (PREDIKAT[s.rkKec] || ''); s.predKab = fin ? (PREDKAB[s.rk] || '') : ''; // Final: hanya juara tingkat kabupaten
   });
   kirimSet = new Set(skor.map(s => s.kode));
   renderSemua();
@@ -116,7 +116,7 @@ $('#bEkspor').onclick = async () => {
   const baris = s => [s.rk || '', s.rkKec || '', s.predikat || '', s.predKab || '', s.nama, +s.kelas || s.kelas, s.asal, s.kec, s.benar, s.salah, s.kosong, s.skor, s.durasiMs != null ? fmtTime(s.durasiMs) : '', fmtJam(s.kirimAt), s.keluar, s.telat ? 'terlambat' : ''];
   const sheets = { Peringkat: [kepala, ...ok.map(baris)] };
   KELAS_LOMBA.forEach(k => { sheets['Kelas ' + k] = [kepala, ...ok.filter(s => s.kelas === k).map(baris)]; });
-  sheets['Juara per Kecamatan'] = [kepala, ...ok.filter(s => s.predikat).sort((a, b) => a.kec.localeCompare(b.kec) || a.kelas.localeCompare(b.kelas) || a.rkKec - b.rkKec).map(baris)];
+  if (ok.some(s => s.predikat)) sheets['Juara per Kecamatan'] = [kepala, ...ok.filter(s => s.predikat).sort((a, b) => a.kec.localeCompare(b.kec) || a.kelas.localeCompare(b.kelas) || a.rkKec - b.rkKec).map(baris)];
   if (ok.some(s => s.predKab)) sheets['Juara Kabupaten'] = [kepala, ...ok.filter(s => s.predKab).sort((a, b) => a.kelas.localeCompare(b.kelas) || a.rk - b.rk).map(baris)];
   sheets['Per Kecamatan'] = [['Kecamatan', 'Terdaftar', 'Sudah Mengerjakan', 'Skor Tertinggi', 'Rata-rata']].concat(rekapKec(daftar).map(r => [r.kec, rosterMuat ? r.daftar : '', r.kirim, r.maks ?? '', r.rata ?? '']));
   if (rosterMuat) sheets['Belum Mengerjakan'] = [['Nama Siswa', 'Kelas', 'Nama Sekolah', 'Kecamatan']].concat(urutPeserta(daftar.filter(([k]) => !kirimSet.has(k))).map(([k, r]) => [r.n, +r.k, r.s, r.kc]));

@@ -61,6 +61,7 @@ function render() {
   const sel = $('#selKec'), selK = $('#selKelas');
   const opsi = '<option value="">Se-Kabupaten Bangkalan</option>' + kecs.map(k => `<option value="${esc(k)}">Kecamatan ${esc(k)}</option>`).join('');
   if (sel.dataset.opsi !== opsi) { sel.innerHTML = opsi; sel.dataset.opsi = opsi; }
+  const final = cfg.babak === 'final'; if (final) pilih = ''; sel.classList.toggle('hide', final); // Final: hanya juara tingkat kabupaten, pilihan kecamatan disembunyikan
   if (pilih && !kecs.includes(pilih)) pilih = '';
   sel.value = pilih; selK.value = pilihKelas; $('#kontrol').classList.remove('hide');
   const full = semuaKelas(pilihKelas);
@@ -71,6 +72,7 @@ function render() {
   if (q) list = list.filter(r => norm(r.n + ' ' + r.s).includes(q));
   const tampilList = list.slice(0, tampilN);
   const nMed = pilih ? 4 : (cfg.babak === 'final' ? 6 : 0); // kecamatan: 4; kabupaten: 6 (hanya Final)
+  const pt = $('#petunjuk'); if (pt) pt.textContent = final ? 'Juara 1, 2, 3 dan Harapan 1, 2, 3 tingkat Kabupaten tiap kelas.' : 'Pilih kecamatan untuk melihat Juara 1, 2, 3 dan Harapan 1 tiap kelas.';
   $('#list').innerHTML = !tampilList.length ? `<p class="center" style="opacity:.75;padding:40px 0">${q ? 'Tidak ditemukan.' : 'Belum ada peserta kelas ini yang mengumpulkan.'}</p>` :
     tampilList.map(s => { const i = s.i; return `<div class="lb-row ${i < nMed && s.sk > 0 ? 'r' + (i + 1) : ''}">
       <span class="rk">${i < nMed && s.sk > 0 ? medali(i) : i + 1}</span>
