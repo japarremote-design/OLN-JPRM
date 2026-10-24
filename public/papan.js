@@ -1,6 +1,7 @@
 // Medali (SVG, tampil di semua perangkat): 1 emas, 2 perak, 3 perunggu, Harapan 1 hijau-tosca bintang
-const MEDALI = [['#f5b301', '#b88700', '1'], ['#cfd8e3', '#8693a6', '2'], ['#d9843b', '#8f4f17', '3'], ['#2dd4bf', '#0f8f80', '★']];
-const medali = i => { const [a, b, t] = MEDALI[i]; return `<svg width="34" height="40" viewBox="0 0 34 40" aria-label="${['Juara 1', 'Juara 2', 'Juara 3', 'Harapan 1'][i]}"><path d="M9 0h6l3 14h-7zM25 0h-6l-3 14h7z" fill="${i === 3 ? '#0f8f80' : '#c0392b'}"/><circle cx="17" cy="25" r="13" fill="${a}" stroke="${b}" stroke-width="2.5"/><circle cx="17" cy="25" r="9" fill="none" stroke="${b}" stroke-width="1" opacity=".5"/><text x="17" y="30" text-anchor="middle" font-size="${t === '★' ? 15 : 14}" font-weight="900" font-family="system-ui,sans-serif" fill="${i === 1 ? '#475569' : '#fff'}">${t}</text></svg>`; };
+const MEDALI = [['#f5b301', '#b88700', '1'], ['#cfd8e3', '#8693a6', '2'], ['#d9843b', '#8f4f17', '3'], ['#2dd4bf', '#0f8f80', '1'], ['#2dd4bf', '#0f8f80', '2'], ['#2dd4bf', '#0f8f80', '3']];
+const LABEL = ['Juara 1', 'Juara 2', 'Juara 3', 'Harapan 1', 'Harapan 2', 'Harapan 3'];
+const medali = i => { const [a, b, t] = MEDALI[i]; return `<svg width="34" height="40" viewBox="0 0 34 40" aria-label="${LABEL[i]}"><path d="M9 0h6l3 14h-7zM25 0h-6l-3 14h7z" fill="${i >= 3 ? '#0f8f80' : '#c0392b'}"/><circle cx="17" cy="25" r="13" fill="${a}" stroke="${b}" stroke-width="2.5"/><circle cx="17" cy="25" r="9" fill="none" stroke="${b}" stroke-width="1" opacity=".5"/><text x="17" y="30" text-anchor="middle" font-size="14" font-weight="900" font-family="system-ui,sans-serif" fill="${i === 1 ? '#475569' : '#fff'}">${t}</text></svg>`; };
 // Papan skor publik. Hanya membaca 2 dokumen kecil (config/lomba & publik/papan) yang diperbarui admin.
 buatHeader('Jawa Pos Radar Madura · Papan Skor Langsung');
 let cfg = {}, papan = {}, pilih = '', pilihKelas = '3', tampilN = 100;
@@ -67,11 +68,11 @@ function render() {
   const total = list.length;
   if (q) list = list.filter(r => norm(r.n + ' ' + r.s).includes(q));
   const tampilList = list.slice(0, tampilN);
-  const label = ['Juara 1', 'Juara 2', 'Juara 3', 'Harapan 1'];
+  const nMed = pilih ? 4 : (cfg.babak === 'final' ? 6 : 0); // kecamatan: 4; kabupaten: 6 (hanya Final)
   $('#list').innerHTML = !tampilList.length ? `<p class="center" style="opacity:.75;padding:40px 0">${q ? 'Tidak ditemukan.' : 'Belum ada peserta kelas ini yang mengumpulkan.'}</p>` :
-    tampilList.map(s => { const i = s.i; return `<div class="lb-row ${pilih && i < 4 && s.sk > 0 ? 'r' + (i + 1) : ''}">
-      <span class="rk">${pilih && i < 4 && s.sk > 0 ? medali(i) : i + 1}</span>
-      <span class="nm"><b>${esc(s.n)}</b><small>${pilih && i < 4 ? `<em class="pred">${label[i]}</em> · ` : ''}Kelas ${esc(s.k)} · ${esc(s.s)}${pilih ? '' : ' · Kec. ' + esc(s.kc)}${s.d != null ? ' · ' + fmtTime(s.d) : ''}</small></span>
+    tampilList.map(s => { const i = s.i; return `<div class="lb-row ${i < nMed && s.sk > 0 ? 'r' + (i + 1) : ''}">
+      <span class="rk">${i < nMed && s.sk > 0 ? medali(i) : i + 1}</span>
+      <span class="nm"><b>${esc(s.n)}</b><small>${i < nMed && s.sk > 0 ? `<em class="pred">${LABEL[i]}</em> · ` : ''}Kelas ${esc(s.k)} · ${esc(s.s)}${pilih ? '' : ' · Kec. ' + esc(s.kc)}${s.d != null ? ' · ' + fmtTime(s.d) : ''}</small></span>
       <span class="pr">${s.b} benar</span>
       <span class="sk">${s.sk}</span></div>`; }).join('');
   const jml = $('#jml'), more = $('#more');

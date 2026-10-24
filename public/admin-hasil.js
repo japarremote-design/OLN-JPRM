@@ -30,6 +30,7 @@ const lihat = id => !$('#' + id).classList.contains('hide');
 
 // ---------- penilaian (di perangkat admin; kunci tidak pernah dikirim ke HP peserta) ----------
 const PREDIKAT = ['', 'Juara 1', 'Juara 2', 'Juara 3', 'Harapan 1'];
+const PREDKAB = ['', 'Juara 1', 'Juara 2', 'Juara 3', 'Harapan 1', 'Harapan 2', 'Harapan 3']; // tingkat kabupaten, hanya babak Final
 const batasKel = () => cfg && cfg.batasKeluar != null ? Math.max(0, +cfg.batasKeluar || 0) : 3;
 // Beri kesempatan lagi: hapus dokumen jawaban saja (klaim tetap). Peserta menekan "Cek izin" di HP-nya, lalu lanjut dengan jawaban & waktu awal yang sama.
 async function kesempatanLagi(kode) {
@@ -62,9 +63,9 @@ function hitungSkor() {
   urutkanSkor(skor); skor.sort((a, b) => a.telat - b.telat); // kiriman terlambat di bawah
   const rk = {}, rkc = {};
   skor.forEach(s => { // peringkat dihitung per kelas (soal tiap kelas berbeda)
-    if (s.telat) { s.rk = 0; s.rkKec = 0; s.predikat = ''; return; }
+    if (s.telat) { s.rk = 0; s.rkKec = 0; s.predikat = ''; s.predKab = ''; return; }
     s.rk = rk[s.kelas] = (rk[s.kelas] || 0) + 1;
-    const key = s.kec + '|' + s.kelas; s.rkKec = rkc[key] = (rkc[key] || 0) + 1; s.predikat = PREDIKAT[s.rkKec] || '';
+    const key = s.kec + '|' + s.kelas; s.rkKec = rkc[key] = (rkc[key] || 0) + 1; s.predikat = PREDIKAT[s.rkKec] || ''; s.predKab = (sesiMeta() || {}).babak === 'final' ? (PREDKAB[s.rk] || '') : '';
   });
   kirimSet = new Set(skor.map(s => s.kode));
   renderSemua();
@@ -90,7 +91,7 @@ function renderHasil() {
     .map(([l, v]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
   const arr = saringHasil();
   $('#tbHasil').innerHTML = !arr.length ? '<tr><td colspan="11" class="mut center">Belum ada kiriman.</td></tr>' : arr.slice(0, batasH).map(s => `
-    <tr><td><span class="kls k${esc(s.kelas)}">Kelas ${esc(s.kelas)}</span></td><td><b>${s.rk || '–'}</b></td><td>${s.rkKec || '–'}${s.predikat ? `<br><span class="pill mulai">${s.predikat}</span>` : ''}</td><td><b>${esc(s.nama)}</b><br><span class="mut">${esc(s.asal)} · Kec. ${esc(s.kec)}</span></td>
+    <tr><td><span class="kls k${esc(s.kelas)}">Kelas ${esc(s.kelas)}</span></td><td><b>${s.rk || '–'}</b>${s.predKab ? `<br><span class="pill mulai">${s.predKab}</span>` : ''}</td><td>${s.rkKec || '–'}${s.predikat ? `<br><span class="pill mulai">${s.predikat}</span>` : ''}</td><td><b>${esc(s.nama)}</b><br><span class="mut">${esc(s.asal)} · Kec. ${esc(s.kec)}</span></td>
     <td>${s.benar}</td><td>${s.salah}</td><td>${s.kosong}</td><td><b>${s.skor}</b></td>
     <td>${s.telat ? '<span class="pill selesai">terlambat</span>' : fmtTime(s.durasiMs || 0)}</td><td>${s.keluar ? `<span class="pill selesai">${s.keluar}×</span>${s.henti ? '<br><small class="warn">mencapai batas</small>' : ''}` : '0'}</td>
     <td>${s.henti ? `<button class="btn or sm" data-izin="${s.kode}">Beri kesempatan</button><br>` : ''}<button class="btn ghost sm" data-reset="${s.kode}">Reset</button></td></tr>`).join('');
@@ -111,11 +112,12 @@ $('#bMoreH').onclick = () => { batasH += 200; renderHasil(); };
 $('#bEkspor').onclick = async () => {
   if (!sesiMeta()) return toast('Belum ada sesi.');
   const ok = skor, daftar = terdaftarSesi();
-  const kepala = ['Peringkat Kelas', 'Peringkat Kecamatan', 'Predikat', 'Nama Siswa', 'Kelas', 'Nama Sekolah', 'Kecamatan', 'Benar', 'Salah', 'Kosong', 'Skor', 'Waktu Pengerjaan', 'Jam Kirim', 'Keluar Aplikasi', 'Keterangan'];
-  const baris = s => [s.rk || '', s.rkKec || '', s.predikat || '', s.nama, +s.kelas || s.kelas, s.asal, s.kec, s.benar, s.salah, s.kosong, s.skor, s.durasiMs != null ? fmtTime(s.durasiMs) : '', fmtJam(s.kirimAt), s.keluar, s.telat ? 'terlambat' : ''];
+  const kepala = ['Peringkat Kelas', 'Peringkat Kecamatan', 'Predikat Kecamatan', 'Predikat Kabupaten', 'Nama Siswa', 'Kelas', 'Nama Sekolah', 'Kecamatan', 'Benar', 'Salah', 'Kosong', 'Skor', 'Waktu Pengerjaan', 'Jam Kirim', 'Keluar Aplikasi', 'Keterangan'];
+  const baris = s => [s.rk || '', s.rkKec || '', s.predikat || '', s.predKab || '', s.nama, +s.kelas || s.kelas, s.asal, s.kec, s.benar, s.salah, s.kosong, s.skor, s.durasiMs != null ? fmtTime(s.durasiMs) : '', fmtJam(s.kirimAt), s.keluar, s.telat ? 'terlambat' : ''];
   const sheets = { Peringkat: [kepala, ...ok.map(baris)] };
   KELAS_LOMBA.forEach(k => { sheets['Kelas ' + k] = [kepala, ...ok.filter(s => s.kelas === k).map(baris)]; });
   sheets['Juara per Kecamatan'] = [kepala, ...ok.filter(s => s.predikat).sort((a, b) => a.kec.localeCompare(b.kec) || a.kelas.localeCompare(b.kelas) || a.rkKec - b.rkKec).map(baris)];
+  if (ok.some(s => s.predKab)) sheets['Juara Kabupaten'] = [kepala, ...ok.filter(s => s.predKab).sort((a, b) => a.kelas.localeCompare(b.kelas) || a.rk - b.rk).map(baris)];
   sheets['Per Kecamatan'] = [['Kecamatan', 'Terdaftar', 'Sudah Mengerjakan', 'Skor Tertinggi', 'Rata-rata']].concat(rekapKec(daftar).map(r => [r.kec, rosterMuat ? r.daftar : '', r.kirim, r.maks ?? '', r.rata ?? '']));
   if (rosterMuat) sheets['Belum Mengerjakan'] = [['Nama Siswa', 'Kelas', 'Nama Sekolah', 'Kecamatan']].concat(urutPeserta(daftar.filter(([k]) => !kirimSet.has(k))).map(([k, r]) => [r.n, +r.k, r.s, r.kc]));
   unduhXlsx(`hasil-${(sesiMeta().nama || 'sesi').replace(/\W+/g, '-').toLowerCase()}.xlsx`, sheets);
