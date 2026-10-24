@@ -1,3 +1,5 @@
+// Pembaruan otomatis: begitu versi baru aplikasi aktif, halaman dimuat ulang sekali (tidak saat ujian berlangsung)
+if ('serviceWorker' in navigator && navigator.serviceWorker.controller) { let sudah = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (sudah) return; if (document.body && document.body.classList.contains('ujian')) return; sudah = true; location.reload(); }); }
 // Medali (SVG, tampil di semua perangkat): 1 emas, 2 perak, 3 perunggu, Harapan 1 hijau-tosca bintang
 const MEDALI = [['#f5b301', '#b88700', '1'], ['#cfd8e3', '#8693a6', '2'], ['#d9843b', '#8f4f17', '3'], ['#2dd4bf', '#0f8f80', '1'], ['#2dd4bf', '#0f8f80', '2'], ['#2dd4bf', '#0f8f80', '3']];
 const LABEL = ['Juara 1', 'Juara 2', 'Juara 3', 'Harapan 1', 'Harapan 2', 'Harapan 3'];
