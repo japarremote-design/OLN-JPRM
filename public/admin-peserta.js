@@ -59,26 +59,47 @@ function isiFilterKec() {
   });
 }
 
+// ---------- status login / mulai (khusus sesi Final; dibaca lewat listener sehingga hanya perubahan yang dihitung) ----------
+let stLogin = new Set(), stMulai = new Set(), stKey = '', unsubL = null, unsubM = null;
+const sesiFinal = () => { const S = typeof sesiMeta === 'function' ? sesiMeta() : null; return !!(S && S.babak === 'final'); };
+function pastikanStatus() {
+  const sid = typeof sesiDipilih !== 'undefined' ? sesiDipilih : null, key = sesiFinal() && sid ? sid : '';
+  if (key === stKey) return;
+  if (unsubL) unsubL(); if (unsubM) unsubM(); unsubL = unsubM = null; stKey = key; stLogin = new Set(); stMulai = new Set();
+  if (!key) return;
+  const FP = firebase.firestore.FieldPath, rng = c => fs.collection(c).where(FP.documentId(), '>=', key + '_').where(FP.documentId(), '<', key + '`');
+  const ambil = (qs) => new Set(qs.docs.map(d => d.id.slice(key.length + 1)));
+  unsubL = rng('loginfinal').onSnapshot(qs => { stLogin = ambil(qs); renderPeserta(); }, e => toast('Gagal membaca status login: ' + e.message));
+  unsubM = rng('klaim').onSnapshot(qs => { stMulai = ambil(qs); renderPeserta(); }, e => toast('Gagal membaca status mulai: ' + e.message));
+}
+// belum login → sudah login → mengerjakan → sudah kirim
+function statusPeserta(kode) {
+  const kirim = typeof kirimSet !== 'undefined' ? kirimSet : new Set();
+  return kirim.has(kode) ? 'kirim' : stMulai.has(kode) ? 'mulai' : stLogin.has(kode) ? 'login' : 'belum';
+}
+const LABEL_STATUS = { belum: '<span class="pill selesai">belum login</span>', login: '<span class="pill menunggu">sudah login</span>', mulai: '<span class="pill mulai">mengerjakan</span>', kirim: '<span class="pill mulai">sudah kirim</span>' };
+
 // ---------- tampilan ----------
 function saringPeserta() {
-  const q = ($('#cariP').value || '').toLowerCase().trim(), kc = $('#fKec').value, kl = $('#fKelas').value;
-  const arr = [...roster.entries()].filter(([kode, r]) => (!kc || r.kc === kc) && (!kl || r.k === kl) && (!q || (r.n + ' ' + r.s).toLowerCase().includes(q)));
+  const q = ($('#cariP').value || '').toLowerCase().trim(), kc = $('#fKec').value, kl = $('#fKelas').value, fin = sesiFinal(), st = fin ? $('#fStatus').value : '';
+  const arr = [...roster.entries()].filter(([kode, r]) => (!fin || r.finalis) && (!kc || r.kc === kc) && (!kl || r.k === kl) && (!q || (r.n + ' ' + r.s).toLowerCase().includes(q)) && (!st || statusPeserta(kode) === st));
   arr.sort((a, b) => a[1].kc.localeCompare(b[1].kc) || a[1].s.localeCompare(b[1].s) || a[1].k.localeCompare(b[1].k) || a[1].n.localeCompare(b[1].n));
   return arr;
 }
 function renderPeserta() {
+  pastikanStatus(); const fin = sesiFinal(); $('#fStatus').classList.toggle('hide', !fin); if (!fin) $('#fStatus').value = '';
   $('#jmlPeserta').textContent = rosterMuat ? `(${roster.size})` : '';
   const vals = [...roster.values()];
   const sek = new Set(vals.map(r => r.kc + '|' + r.s)), kec = new Set(vals.map(r => r.kc));
   const per = k => vals.filter(r => r.k === k).length;
-  $('#statPeserta').innerHTML = [['Peserta', vals.length], ['Kelas 3', per('3')], ['Kelas 4', per('4')], ['Kelas 5', per('5')], ['Sekolah', sek.size], ['Kecamatan', kec.size], ['Mendaftar mandiri', vals.filter(r => !r.imp).length], ['Finalis', vals.filter(r => r.finalis).length]]
+  $('#statPeserta').innerHTML = [['Peserta', vals.length], ['Kelas 3', per('3')], ['Kelas 4', per('4')], ['Kelas 5', per('5')], ['Sekolah', sek.size], ['Kecamatan', kec.size], ['Mendaftar mandiri', vals.filter(r => !r.imp).length], ['Finalis', vals.filter(r => r.finalis).length]].concat(fin ? (() => { const f = [...roster.entries()].filter(([, r]) => r.finalis).map(([k]) => statusPeserta(k)), n = x => f.filter(v => v === x).length; return [['Belum login', n('belum')], ['Sudah login', n('login')], ['Mengerjakan', n('mulai')], ['Sudah kirim', n('kirim')]]; })() : [])
     .map(([l, v]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
   const arr = saringPeserta();
   $('#infoP').textContent = rosterMuat ? `${arr.length} peserta sesuai filter.` : 'Data belum dimuat.';
   const kirim = typeof kirimSet !== 'undefined' ? kirimSet : new Set();
   $('#tbP').innerHTML = !arr.length ? '<tr><td colspan="7" class="mut center">Belum ada data. Impor Excel di atas atau tunggu peserta mendaftar sendiri.</td></tr>' : arr.slice(0, batasP).map(([kode, r], i) => `
     <tr><td>${i + 1}</td><td>${esc(r.n)}${r.finalis ? ' <span class="pill mulai">finalis</span>' : ''}</td><td>${esc(r.k)}</td><td>${esc(r.s)}</td><td>${esc(r.kc)}</td>
-    <td>${kirim.has(kode) ? '<span class="pill mulai">sudah kirim</span>' : '<span class="mut">–</span>'}</td>
+    <td>${fin ? LABEL_STATUS[statusPeserta(kode)] : (kirim.has(kode) ? '<span class="pill mulai">sudah kirim</span>' : '<span class="mut">–</span>')}</td>
     <td style="white-space:nowrap"><button class="btn ghost sm" data-reset="${kode}" title="Hapus kunci perangkat & jawaban sesi terpilih">Reset</button> <button class="btn ghost sm" data-rlogin="${kode}" title="Lepas kunci login perangkat (Final) agar peserta bisa masuk dari perangkat lain">Reset login</button> <button class="btn ghost sm" data-hapusp="${kode}">Hapus</button></td></tr>`).join('');
   $('#bMoreP').classList.toggle('hide', arr.length <= batasP);
   $$('[data-reset]').forEach(b => b.onclick = () => resetPeserta(b.dataset.reset));
@@ -88,7 +109,7 @@ function renderPeserta() {
     await refPeserta(b.dataset.hapusp).delete(); roster.delete(b.dataset.hapusp); renderPeserta();
   });
 }
-['#cariP', '#fKec', '#fKelas'].forEach(s => $(s).addEventListener('input', () => { batasP = 100; renderPeserta(); }));
+['#cariP', '#fKec', '#fKelas', '#fStatus'].forEach(s => $(s).addEventListener('input', () => { batasP = 100; renderPeserta(); }));
 $('#bMoreP').onclick = () => { batasP += 200; renderPeserta(); };
 // Final: lepas kunci login perangkat saja (jawaban & waktu mulai tidak disentuh)
 async function resetLogin(kode) {
